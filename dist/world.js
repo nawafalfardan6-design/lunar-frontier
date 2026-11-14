@@ -1,3 +1,4 @@
+import {buildShip, shipStations} from './ship.js';
 import {opening, companionReaction, createCompanion} from './companion.js';
 import {briefings, enableTouchStick} from './presentation.js';
 import {saveMission, loadMission, forecast, resourceHistory} from './mission-session.js';
@@ -268,9 +269,16 @@ scene.add(
     new T.PointsMaterial({ color: 0xddeeff, size: 0.55, fog: false }),
   ),
 );
-menuScene.add(
-  new T.Points(starGeo, new T.PointsMaterial({ color: 0xf1ddbd, size: 0.6 })),
-);
+// A full backdrop keeps stars visible at both desktop and phone aspect ratios.
+const titleStars = new Float32Array(1500);
+for (let i=0;i<titleStars.length;i+=3) {
+  titleStars[i]=(random()-0.5)*95;
+  titleStars[i+1]=(random()-0.5)*50;
+  titleStars[i+2]=-35-random()*15;
+}
+const titleStarGeometry=new T.BufferGeometry();
+titleStarGeometry.setAttribute('position',new T.BufferAttribute(titleStars,3));
+menuScene.add(new T.Points(titleStarGeometry,new T.PointsMaterial({color:0xd8e9f7,size:1.6,sizeAttenuation:false,transparent:true,opacity:0.85})));
 const earth = mesh(
   new T.SphereGeometry(9, 32, 24),
   mat(0x3c85bb),
@@ -296,93 +304,7 @@ for (let i = 0; i < 15; i++) {
   );
   cloud.scale.y = 0.5;
 }
-function habitat(x, z, name, color, plants = false) {
-  const roof = mesh(
-    new T.SphereGeometry(5.5, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2),
-    mat(0xf0ddbb),
-    x,
-    5.3,
-    z,
-  );
-  roof.scale.set(1, 0.4, 0.8);
-  box(12, 0.5, 10, 0x37334b, x, 0.25, z);
-  box(11, 4.7, 8.5, 0xe1d6bf, x, 2.7, z);
-  box(11.5, 0.4, 9, color, x, 5.15, z);
-  for (const dx of [-3.5, 3.5]) {
-    box(2.7, 1.7, 0.16, 0x122c3f, x + dx, 3.2, z + 4.3);
-    box(2.3, 1.3, 0.18, plants ? 0x448c76 : 0x73ada7, x + dx, 3.2, z + 4.4);
-  }
-  box(2.1, 3.5, 0.35, 0x35334b, x, 2, z + 4.5);
-  for (const dx of [-1.15, 1.15])
-    box(0.12, 3.3, 0.4, color, x + dx, 2, z + 4.6);
-  sign(name, x, 5.9, z + 4.5);
-  // Pressure-hatch trim, wall ribs and service tanks give the habitat scale.
-  const hatch = mesh(new T.TorusGeometry(1.2, 0.14, 8, 16), mat(0x788995), x, 2.3, z+4.7);
-  hatch.scale.y=1.35;
-  box(0.08,2.8,0.08,0x8faaa9,x,2.2,z+4.8);
-  box(0.5,0.12,0.12,0xe4b474,x+0.35,2.1,z+4.9);
-  for(const offset of [-5,-2,2,5]) box(0.13,4.3,0.18,0x8e9ba3,x+offset,2.7,z+4.35);
-  for(const offset of [-4.5,4.5]) {
-    const tank=mesh(new T.CylinderGeometry(0.55,0.55,2.6,16),mat(0xbac7c9),x+offset,1.7,z+5.3);
-    mesh(new T.TorusGeometry(0.56,0.07,6,16),mat(color),x+offset,1.2,z+5.3).rotation.x=Math.PI/2;
-    mesh(new T.TorusGeometry(0.56,0.07,6,16),mat(color),x+offset,2.1,z+5.3).rotation.x=Math.PI/2;
-  }
-  if (plants) {
-    for (let i = -2; i <= 2; i++) {
-      box(0.8, 0.6, 0.8, 0x476d59, x + i * 1.7, 5.7, z);
-      mesh(new T.ConeGeometry(0.6, 1.8, 7), mat(0x89bf67), x + i * 1.7, 6.6, z);
-    }
-  } else
-    for (const dx of [-4, 4])
-      mesh(
-        new T.CylinderGeometry(0.65, 0.65, 5, 12),
-        mat(0x889ca9),
-        x + dx,
-        2.7,
-        z - 5,
-      );
-  obstacle(x, z, 12, 10);
-}
-habitat(0, -12, "LIFE SUPPORT", 0x8edac8);
-habitat(-22, -8, "CREW SHELTER", 0xf3c477);
-habitat(22, -10, "GREENHOUSE", 0xa8d079, true);
-habitat(0, 32, "MISSION CONTROL", 0x9bb8e8);
-// A low protective berm makes the shelter visually distinct.
-for(let i=0;i<7;i++) {
-  const rock=mesh(new T.DodecahedronGeometry(1.6,0),mat(0x747685),-27+i*1.65,1,-13.3);
-  rock.scale.set(1,0.8,1.2);
-}
-// Greenhouse glazing and plant beds occupy the protected roof enclosure.
-const greenhouseGlass=mesh(new T.SphereGeometry(5.2,20,10,0,Math.PI*2,0,Math.PI/2),new T.MeshPhysicalMaterial({color:0x91d8c5,transparent:true,opacity:0.28,roughness:0.2,depthWrite:false}),22,5.35,-10);
-greenhouseGlass.scale.set(1,0.62,0.8);
-for (let i = 0; i < 4; i++) {
-  const x = -26 + (i % 2) * 8,
-    z = 17 + Math.floor(i / 2) * 8;
-  box(0.4, 2.3, 0.4, 0xadc0cc, x, 1.1, z);
-  const panel = box(6.5, 0.15, 4.5, 0x173a6e, x, 2.5, z);
-  panel.rotation.x = -0.35;
-  for (let j = -2; j <= 2; j++) {
-    const strip = box(0.04, 0.18, 4.4, 0x7c9fc8, x + j * 1.1, 2.5, z);
-    strip.rotation.x = -0.35;
-  }
-  obstacle(x, z, 6.5, 4.5);
-}
-box(4, 1.4, 3, 0xc3cbd0, 24, 0.7, 11);
-obstacle(24, 11, 4, 3);
-mesh(new T.CylinderGeometry(0.6, 0.9, 2, 12), mat(0xe6b76a), 24, 2.3, 11);
-sign("SCIENCE STATION", 24, 4.5, 11);
-mesh(new T.CylinderGeometry(0.5, 1, 5, 12), mat(0xb6c3cd), 21, 2.5, 29);
-const dish = mesh(
-  new T.SphereGeometry(4, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2),
-  new T.MeshStandardMaterial({ color: 0xd4dce1, side: T.DoubleSide }),
-  21,
-  6,
-  29,
-);
-dish.rotation.x = Math.PI + 0.5;
-box(0.12, 4, 0.12, 0x819cae, 21, 6.5, 29);
-obstacle(21, 29, 7, 7);
-sign("COMMUNICATIONS", 21, 10, 29);
+buildShip(scene,box,mesh,mat,obstacle);
 function astronaut(x, z, color) {
   const g = new T.Group();
   g.position.set(x, 0, z);
@@ -405,47 +327,12 @@ function astronaut(x, z, color) {
   box(0.5, 0.16, 0.53, color, 0, 1.2, 0, g);
   return g;
 }
-const crew = [
-  astronaut(-4, -5, 0xffbd65),
-  astronaut(17, -3, 0x99d88c),
-  astronaut(16, 23, 0x86c3df),
-];
-box(5, 0.04, 47, 0x8f8297, 0, 0, 10);
-box(49, 0.04, 4, 0x8f8297, 0, 0.01, 3);
-for (let i = -3; i <= 6; i++)
-  for (const side of [-1, 1]) {
-    box(0.16, 0.7, 0.16, 0x394a57, side * 3, 0.35, i * 5);
-    mesh(
-      new T.SphereGeometry(0.12, 6, 6),
-      new T.MeshBasicMaterial({ color: 0xc3e9ea }),
-      side * 3,
-      0.75,
-      i * 5,
-    );
-  }
-const stations = [
-  { name: "Life support", x: 0, z: -5.6 },
-  { name: "Crew shelter", x: -22, z: -1.6 },
-  { name: "Science station", x: 24, z: 14 },
-  { name: "Radiation shelter", x: -22, z: -1.6 },
-  { name: "Greenhouse", x: 22, z: -3.6 },
-  { name: "Communications", x: 21, z: 34 },
-  { name: "Mission control", x: 0, z: 38.4 },
-];
-for (const i of [0, 1, 2, 4, 5, 6]) {
-  const s = stations[i];
-  box(0.8, 1.1, 0.6, 0x223c4f, s.x, 0.55, s.z);
-  const screen = box(0.85, 0.65, 0.12, 0x7ed5c5, s.x, 1.35, s.z + 0.22);
-  screen.material = new T.MeshStandardMaterial({
-    color: 0x72d7c2,
-    emissive: 0x328f7a,
-    emissiveIntensity: 0.8,
-  });
-}
+const crew = [astronaut(-3,-7,0xffbd65),astronaut(7,9,0x99d88c),astronaut(-7,0,0x86c3df)];
+const stations = shipStations;
 const beacon = new T.Group();
 scene.add(beacon);
 const ring = mesh(
-  new T.TorusGeometry(1.4, 0.055, 8, 48),
+  new T.TorusGeometry(0.9, 0.055, 8, 48),
   new T.MeshBasicMaterial({ color: 0xffc679 }),
   0,
   0.09,
@@ -510,7 +397,7 @@ function titleScreen() {
   keys.clear();
   dialog.close();
   document.body.classList.add("title-screen");
-  entry.innerHTML = `<div class="entry-panel"><span class="entry-eyebrow">A LITTLE OUTPOST. A BIG ADVENTURE.</span><h1>LUNAR<br><span>FRONTIER</span></h1><p class="entry-tagline">A delayed supply ship. Four explorers.<br>Seven days to bring them home.</p><nav aria-label="Main menu"><button id="start-game">${missionStarted ? "CONTINUE EXPEDITION" : "START EXPEDITION"} <span>↗</span></button><button id="settings">SETTINGS <span>⚙</span></button><button id="how-to">HOW TO PLAY <span>?</span></button></nav><p class="menu-note">4 astronauts · 7 days · One small step at a time</p></div><div class="moon-caption">THE MOON<span>YOUR NEXT FRONTIER</span><button id="moon-spin">${preferences.moonSpin ? "Pause rotation" : "Rotate Moon"}</button></div><div class="entry-footer">LUNAR FRONTIER <span>A SPACE EXPLORATION GAME</span></div>`;
+  entry.innerHTML = `<div class="entry-panel"><h1>LUNAR<br><span>FRONTIER</span></h1><nav aria-label="Main menu"><button id="start-game">${missionStarted ? "CONTINUE EXPEDITION" : "START EXPEDITION"} <span>↗</span></button><button id="settings">SETTINGS <span>⚙</span></button><button id="how-to">HOW TO PLAY <span>?</span></button></nav></div><div class="moon-caption"><button id="moon-spin">${preferences.moonSpin ? "Pause rotation" : "Rotate Moon"}</button></div>`;
   document.getElementById("start-game").onclick = () => {
     if (missionStarted) { resume(); return; }
     show(opening);
@@ -582,7 +469,7 @@ function interact(direct = false) {
         hud();
         const last = state.log.at(-1);
         show(
-          `<span class="kicker">DAY ${last.day} COMPLETE</span><h2>${last.choice}</h2><div class="nora-response"><strong>NORA � CREW CHANNEL</strong><p>${companionReaction(state)}</p></div>${saved ? "" : "<p>Your browser could not save progress. Keep this tab open to continue.</p>"}<ul>${last.notes.map((n) => `<li>${n}</li>`).join("")}</ul><aside><h3>Why this matters in real life</h3><p>${last.why}</p></aside><button id="continue">${state.ended ? "View report" : "Explore day " + (state.day + 1)} →</button>`,
+          `<span class="kicker">DAY ${last.day} COMPLETE</span><h2>${last.choice}</h2><div class="nora-response"><strong>NORA · CREW CHANNEL</strong><p>${companionReaction(state)}</p></div>${saved ? "" : "<p>Your browser could not save progress. Keep this tab open to continue.</p>"}<ul>${last.notes.map((n) => `<li>${n}</li>`).join("")}</ul><aside><h3>Why this matters in real life</h3><p>${last.why}</p></aside><button id="continue">${state.ended ? "View report" : "Explore day " + (state.day + 1)} →</button>`,
         );
         document.getElementById("continue").onclick = state.ended
           ? report
@@ -598,7 +485,7 @@ stationAccess.onclick=()=>interact(true);
 document.body.append(stationAccess);
 document.getElementById("help").onclick = () => {
   show(
-    '<h2>Explore the outpost</h2><p>WASD or arrow keys move. Drag the mouse to look. E interacts near the amber marker. Space jumps. Shift moves faster. Escape pauses. Touch screens have movement buttons.</p><h3>Mission science</h3><p>Each turn represents one Earth day. Resource points, events and solar charging are simplified game rules. This is an illustrative outpost. Packaged meals sustain the crew while an existing crop experiment grows.</p><p><a href="https://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=LRO-L-DLRE-5-GCP-V1.0" target="_blank" rel="noopener">NASA Diviner</a> · <a href="https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/" target="_blank" rel="noopener">Life support</a> · <a href="https://www.nasa.gov/reference/crew-systems/" target="_blank" rel="noopener">Crew protection</a> · <a href="https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/" target="_blank" rel="noopener">Growing food</a></p><p>NASA science explanations are included. Numerical NASA measurements are still pending integration.</p><button id="return">Return to surface</button>',
+    '<h2>Explore the lander</h2><p>WASD or arrow keys move. Drag the mouse to look. E interacts near the amber marker. Space jumps. Shift moves faster. Escape pauses. Touch screens have movement buttons.</p><h3>Mission science</h3><p>Each turn represents one Earth day. Resource points, events and solar charging are simplified game rules. You are aboard the landed spacecraft Selene. Packaged meals sustain the crew while an existing crop experiment grows.</p><p><a href="https://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=LRO-L-DLRE-5-GCP-V1.0" target="_blank" rel="noopener">NASA Diviner</a> · <a href="https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/" target="_blank" rel="noopener">Life support</a> · <a href="https://www.nasa.gov/reference/crew-systems/" target="_blank" rel="noopener">Crew protection</a> · <a href="https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/" target="_blank" rel="noopener">Growing food</a></p><p>NASA science explanations are included. Numerical NASA measurements are still pending integration.</p><button id="return">Return to ship</button>',
   );
   document.getElementById("return").onclick = resume;
 };
@@ -686,8 +573,8 @@ document.querySelectorAll("[data-key]").forEach((b) => {
 enableTouchStick(keys);
 function clearAt(x, z) {
   return (
-    Math.abs(x) < 55 &&
-    Math.abs(z) < 55 &&
+    Math.abs(x) < 8.4 &&
+    Math.abs(z) < 12.8 &&
     !obstacles.some((o) => Math.abs(x - o.x) < o.w && Math.abs(z - o.z) < o.d)
   );
 }
@@ -768,14 +655,14 @@ function frame(time) {
     if (clearAt(player.x + dx, player.z)) player.x += dx;
     if (clearAt(player.x, player.z + dz)) player.z += dz;
     velocity -= 1.62 * dt;
-    jumpY = Math.max(0, jumpY + velocity * dt);
+    jumpY = Math.max(0, Math.min(2.4, jumpY + velocity * dt));
     if (jumpY === 0) velocity = 0;
   }
   camera.position.set(player.x, player.y + jumpY, player.z);
   camera.rotation.set(pitch, yaw, 0, "YXZ");
   arrow.position.y = preferences.reducedMotion
     ? 3
-    : 3 + Math.sin(time * 0.003) * 0.2;
+    : 2.6 + Math.sin(time * 0.003) * 0.12;
   crew.forEach(
     (p, i) =>
       (p.rotation.y = preferences.reducedMotion
@@ -796,7 +683,7 @@ function frame(time) {
           ? "To your right"
           : "To your left";
   document.getElementById("objective").innerHTML =
-    `<span class="kicker">${state.day < 2 ? "PREPARE THE OUTPOST" : state.day < 5 ? "KEEP THE CREW SAFE" : "BRING OUR WORK HOME"}</span><h2>${state.ended ? "Mission complete" : briefings[state.day].title}</h2><p>${state.ended ? "Open your mission report." : `Go to ${s.name} · ${Math.round(distance)} m · ${direction}`}</p><p class="objective-hint">${near ? "Press E or Interact to decide." : "Walk to the amber beacon or open Mission console."}</p>`;
+    `<span class="kicker">${state.day < 2 ? "SECURE THE LANDER" : state.day < 5 ? "KEEP THE CREW SAFE" : "BRING OUR WORK HOME"}</span><h2>${state.ended ? "Mission complete" : briefings[state.day].title}</h2><p>${state.ended ? "Open your mission report." : `Go to ${s.name} · ${Math.round(distance)} m · ${direction}`}</p><p class="objective-hint">${near ? "Press E or Interact to decide." : "Walk to the amber beacon or open Mission console."}</p>`;
   document.getElementById("prompt").textContent = state.ended
     ? "Mission complete · E to view report"
     : near
