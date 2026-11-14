@@ -1,19 +1,16 @@
 import * as T from './vendor/three.module.js';
 
 export const shipStations = [
-  {name:'Life support',x:-5.8,z:-6},
-  {name:'Crew shelter',x:-5.8,z:6},
-  {name:'Science station',x:5.8,z:-5},
-  {name:'Crew shelter',x:-5.8,z:6},
-  {name:'Greenhouse',x:5.8,z:5},
-  {name:'Communications',x:3,z:-10.5},
-  {name:'Flight deck',x:-3,z:-10.5},
+ {name:'Air recycling',x:-5,z:-8}, {name:'Storm shelter',x:5,z:0},
+ {name:'Power bay',x:5,z:-8}, {name:'Storm shelter',x:5,z:0},
+ {name:'Food & water',x:-5,z:0}, {name:'Water recovery',x:-5,z:8},
+ {name:'Flight deck',x:5,z:8}
 ];
 
 export function buildShip(scene,box,mesh,mat,obstacle) {
   const hull=0x586d7a, trim=0x283b49, wall=0xa2b0b5;
   box(19,0.3,28,trim,0,-0.15,0);
-  box(19,0.3,28,trim,0,5.2,0);
+  box(19,0.3,28,trim,0,3.5,0);
   for(let z=-12;z<=12;z+=3) {
     box(17.5,0.04,2.92,0x607582,0,0.02,z);
     box(0.09,0.05,2.6,0xc8ad7d,-2.8,0.05,z);
@@ -21,22 +18,22 @@ export function buildShip(scene,box,mesh,mat,obstacle) {
   }
   // Front and side windows open onto the lunar surface outside the lander.
   box(19,1.4,0.4,wall,0,0.7,-13.5);
-  box(19,0.9,0.4,wall,0,4.75,-13.5);
-  for(const x of [-9,-4.5,0,4.5,9]) box(0.25,3.2,0.5,trim,x,2.9,-13.5);
-  box(19,5.2,0.4,wall,0,2.6,13.5);
+  box(19,0.5,0.4,wall,0,3.25,-13.5);
+  for(const x of [-9,-4.5,0,4.5,9]) box(0.25,2,0.5,trim,x,2.2,-13.5);
+  box(19,3.5,0.4,wall,0,1.75,13.5);
   for(const side of [-1,1]) {
     box(0.4,1.4,27,wall,side*9,0.7,0);
-    box(0.4,0.9,27,wall,side*9,4.75,0);
+    box(0.4,0.5,27,wall,side*9,3.25,0);
     for(let z=-12;z<=12;z+=4) {
-      box(0.5,5.2,0.22,trim,side*9,2.6,z);
+      box(0.5,3.5,0.22,trim,side*9,1.75,z);
       box(0.18,0.22,27,hull,side*8.8,1.4,0);
     }
   }
   for(let z=-10;z<=10;z+=5) {
-    box(18,0.25,0.3,hull,0,4.9,z);
-    const light=mesh(new T.BoxGeometry(5,0.06,0.26),new T.MeshBasicMaterial({color:0xd6f4ef}),0,4.73,z);
+    box(18,0.25,0.3,hull,0,3.25,z);
+    const light=mesh(new T.BoxGeometry(5,0.06,0.26),new T.MeshBasicMaterial({color:0xd6f4ef}),0,3.08,z);
     const lamp=new T.PointLight(0xc5e9e4,18,16,1.2);
-    lamp.position.set(0,4,z);scene.add(lamp);
+    lamp.position.set(0,2.9,z);scene.add(lamp);
   }
   box(2.8,3.8,0.2,trim,0,2,13.2);
   box(0.08,3.6,0.22,0xc6ad7d,0,2,13.06);
@@ -59,25 +56,44 @@ export function buildShip(scene,box,mesh,mat,obstacle) {
     const station=shipStations[index];
     screen(station.name.toUpperCase(),station.x,station.z,0,index===1?'#edc68d':'#a5e0d2');
   }
-  // Habitat hardware gives each station a distinct purpose and silhouette.
-  for(const x of [-7.9,-6.9]) {
-    mesh(new T.CylinderGeometry(0.35,0.35,2.8,16),mat(0xb6c8c9),x,1.4,-7);
-    box(0.7,0.12,0.7,0x80b4ac,x,0.8,-7);
-    box(0.7,0.12,0.7,0x80b4ac,x,2.1,-7);
+  // Six pressure compartments around a narrow central passage.
+  function bulkhead(w,d,x,z) {box(w,3.5,d,wall,x,1.75,z);obstacle(x,z,w,d);}
+  for(const x of [-2,2]) {
+    for(const z of [-11,-5,-3,3,5,11]) bulkhead(0.22,2,x,z);
+    for(const z of [-8,0,8]) {
+      box(0.3,0.5,4,trim,x,3.25,z);
+      for(const dz of [-2,2])box(0.32,3,0.12,0xc8ad7d,x,1.5,z+dz);
+    }
   }
-  obstacle(-7.4,-7,2,1);
-  for(const z of [5,8]) {
-    box(2,0.3,2.2,trim,-7.4,0.55,z);
-    box(1.7,0.15,1.8,0x8aabb6,-7.4,0.78,z);
-    box(1.3,0.2,0.45,0xd3dcdb,-7.4,0.94,z-0.5);
-    obstacle(-7.4,z,2,2.2);
+  for(const z of [-4,4])for(const x of [-5.5,5.5])bulkhead(7,0.22,x,z);
+  const roomLabels=[['AIR',-2,-8],['POWER',2,-8],['FOOD',-2,0],['SHELTER',2,0],['WATER',-2,8],['FLIGHT',2,8]];
+  for(const [label,x,z] of roomLabels){
+    const c=document.createElement('canvas');c.width=256;c.height=64;const ctx=c.getContext('2d');ctx.fillStyle='#1b303a';ctx.fillRect(0,0,256,64);ctx.fillStyle='#d9c7a3';ctx.font='bold 34px sans-serif';ctx.textAlign='center';ctx.fillText(label,128,45);
+    const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;
+    const plaque=mesh(new T.PlaneGeometry(2.2,0.5),new T.MeshBasicMaterial({map:t}),x+(x<0?0.17:-0.17),2.95,z);plaque.rotation.y=x<0?Math.PI/2:-Math.PI/2;
   }
-  for(let z=3;z<=7;z+=2) {
-    box(1.5,0.8,1.5,trim,7.5,0.4,z);
-    for(const dx of [-0.35,0.35])mesh(new T.ConeGeometry(0.32,0.8,7),mat(0x82b68b),7.5+dx,1.15,z);
-    obstacle(7.5,z,1.5,1.5);
+  // Equipment is secured to outer walls, leaving each doorway clear.
+  for(const z of [-9,-7]) {
+    mesh(new T.CylinderGeometry(0.4,0.4,2.5,16),mat(0xb6c8c9),-7.8,1.25,z);
+    obstacle(-7.8,z,1,1);
   }
-  box(1.8,0.6,1.5,0x7a939f,7.1,0.6,-6);
-  mesh(new T.CylinderGeometry(0.32,0.4,0.8,12),mat(0xd1bb89),7.1,1.3,-6);
-  obstacle(7.1,-6,1.8,1.5);
+  for(const z of [-9,-7]) {
+    box(0.8,2.5,1.4,trim,7.8,1.25,z);obstacle(7.8,z,0.8,1.4);
+    for(let y=0.5;y<2.5;y+=0.5)box(0.12,0.12,0.8,0xc6ad7d,7.3,y,z);
+  }
+  for(const y of [0.6,1.8]) {
+    box(1.7,0.15,3,trim,7.5,y,0);box(1.5,0.15,2.7,0x8aabb6,7.5,y+0.15,0);
+    box(1.2,0.2,0.45,0xd3dcdb,7.5,y+0.3,-0.9);
+  }
+  obstacle(7.5,0,1.7,3);
+  for(const z of [-1,1]) {
+    box(1.4,0.8,1.4,trim,-7.5,0.4,z);
+    for(const dx of [-0.3,0.3])mesh(new T.ConeGeometry(0.3,0.7,7),mat(0x82b68b),-7.5+dx,1.1,z);
+    obstacle(-7.5,z,1.4,1.4);
+  }
+  for(const z of [7,9]) {
+    mesh(new T.CylinderGeometry(0.5,0.5,2,16),mat(0x729cae),-7.5,1,z);
+    obstacle(-7.5,z,1,1);
+  }
+  box(1.2,0.3,1.4,trim,7.2,0.6,9);box(1.2,1.1,0.2,0x8aabb6,7.2,1.1,9.6);obstacle(7.2,9,1.2,1.6);
 }

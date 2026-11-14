@@ -74,3 +74,20 @@ dialog a{color:#b0d7d0}dialog th,dialog td,dialog details{border-color:#839da544
 @media(pointer:coarse){footer{font-size:0}}
 @media(min-width:701px){.entry-panel{margin-bottom:35px}.entry-panel nav{gap:8px;margin-top:24px}.entry-panel nav button{padding:14px 21px}.menu-note{margin-bottom:0}}
 
+
+/* Instrument-shaped controls, with large targets for gloves and touch. */
+#hud{border-radius:8px 8px 30px 8px;border-top:0;border-left:3px solid #8fb9b4}
+#objective{background:linear-gradient(90deg,#14212aef,#14212a99);border:0;border-left:2px solid #d3af78;border-radius:0 28px 28px 0;padding:16px 20px}
+#objective .objective-hint{display:none}#objective h2{font-size:23px}
+#prompt{border-radius:40px;padding:12px 24px}#ask-nora{border-radius:40px}#station-access{border-radius:24px 6px 24px 6px}
+dialog{border-radius:28px 8px 28px 8px}dialog:has(.repair){border:0;border-top:4px solid #9bc8c1;max-width:620px;width:calc(100% - 32px)}
+#apparatus{display:flex;justify-content:center;flex-wrap:wrap;gap:18px;padding:26px 4px;background:radial-gradient(ellipse,#34505755,transparent 70%);border-bottom:1px solid #9bc8c144}
+#apparatus button{min-width:72px;min-height:72px}#apparatus small{display:block;font:11px monospace;letter-spacing:1px;margin:8px 0}
+#apparatus .valve{width:104px;height:104px;border:8px double #6c8993;border-radius:50%;background:#1c323d;box-shadow:inset 0 0 0 5px #0c1b24}
+.valve span{display:block;font-size:38px;line-height:38px;transition:transform .15s}.valve[aria-pressed=true]{border-color:#9bc8c1!important;color:#b6efcb}
+#apparatus .lock{border-radius:8px 8px 36px 36px;border-top:6px solid #c9aa77;font-size:30px}.lock:disabled{opacity:1;color:#9bc8c1;background:#28493e}
+#apparatus .breaker{border-radius:8px;border-bottom:12px solid #111e27}.breaker span{display:block;font-size:30px}.breaker[aria-pressed=true]{background:#527e72;border-bottom-color:#bde8d2}
+.tuner{display:block;width:100%;font:14px monospace;color:#b8d8d7}.tuner output{float:right;border:1px solid #8fb9b466;border-radius:50%;padding:10px;color:#e8d7a9}.tuner input{display:block;width:100%;margin:22px 0;accent-color:#d3af78;min-height:32px;background:linear-gradient(90deg,transparent calc(var(--target) - 3%),#8fb9b4 calc(var(--target) - 3%),#8fb9b4 calc(var(--target) + 3%),transparent calc(var(--target) + 3%));cursor:pointer}
+#task-feedback{font:14px monospace;min-height:36px;color:#c8d9d5}#finish-task{border-radius:24px;background:#9bc8c1;color:#14212a;margin-right:12px}#finish-task:disabled{opacity:.35;cursor:not-allowed}
+.repair-sequence h2{color:#e2c896}.repair-water h2{color:#9fcedb}.repair-signal h2{color:#c4b9dd}
+@media(max-width:700px){#apparatus{gap:10px;padding:16px 0}#apparatus .valve{width:82px;height:82px}.repair h2{font-size:27px}#objective{padding:10px 15px}#objective h2{font-size:20px}dialog:has(.repair){max-height:90dvh}.repair p{font-size:15px}}

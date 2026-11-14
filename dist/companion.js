@@ -1,11 +1,11 @@
-export const opening = `<span class="kicker">INCOMING · LANDER SELENE</span><div class="companion-heading"><span class="companion-avatar" aria-hidden="true">N</span><div><strong>NORA</strong><small>Your mission assistant · she/her</small></div><span class="signal" aria-hidden="true">▂ ▅ ▃ ▆</span></div><h2>Commander… our supplies are running low.</h2><p>Our lander is safely on the Moon, but the supply ship has been delayed. Maya checked the pantry twice. We have enough packaged food for <strong>seven more days</strong>, until our planned return.</p><p>We can make it. But the air filter is wearing out, and every repair uses the same battery that powers our science and greenhouse.</p><p><strong>Your first call is waiting at life support.</strong> I’ll keep an eye on the systems. You lead the crew.</p><button id="launch">Nora, let’s get our crew through this →</button>`;
+export const opening = `<span class="kicker">NORA / CREW CHANNEL</span><h2>Seven days of food. Four people.</h2><p>The supply ship is late. Let’s keep Selene breathing until we can go home.</p><button id="launch">Get to the air recycler →</button>`;
 
 export function companionAdvice(state) {
   if(state.ended) return state.life===0||state.safety===0 ? 'Mission control called an early return. We learned where the outpost needed more help. I’m ready to try again with you.' : 'All seven days are in the log. Let’s see what your choices made possible.';
   if(state.power<30) return 'Our battery is getting low. Check the forecast before choosing extra work. Air and water systems need energy every day.';
   if(state.life<45) return 'Maya is watching life support closely. A repair could give the crew more breathing room. Compare the next choices carefully.';
   const tips = [
-    'That amber beacon marks life support. Walk over and press E, or use Mission console. Repairing today can prevent a breakdown later.',
+    'That amber beacon marks life support. Walk over and press E, or use Remote assist. Repairing today can prevent a breakdown later.',
     'Two good jobs, one work period. Preparing the shelter helps during an alert. Tending the plants now makes a later harvest possible.',
     'The heater draws a lot of power. You can collect research again later, so look at what the battery can spare today.',
     'Everyone is taking shelter. We can pause the experiment, or keep it running remotely at an energy cost.',

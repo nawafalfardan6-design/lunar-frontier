@@ -1,3 +1,4 @@
+import {startTask} from './tasks.js';
 import {buildShip, shipStations} from './ship.js';
 import {opening, companionReaction, createCompanion} from './companion.js';
 import {briefings, enableTouchStick} from './presentation.js';
@@ -327,7 +328,7 @@ function astronaut(x, z, color) {
   box(0.5, 0.16, 0.53, color, 0, 1.2, 0, g);
   return g;
 }
-const crew = [astronaut(-3,-7,0xffbd65),astronaut(7,9,0x99d88c),astronaut(-7,0,0x86c3df)];
+const crew = [astronaut(-6,-10,0xffbd65),astronaut(6,10,0x99d88c),astronaut(6,2,0x86c3df)];
 const stations = shipStations;
 const beacon = new T.Group();
 scene.add(beacon);
@@ -456,31 +457,23 @@ function interact(direct = false) {
   }
   if (!near && !direct) return;
   const day = days[state.day];
-  const briefing = briefings[state.day];
-  show(
-    `<span class="kicker">DAY ${state.day + 1} / ${stations[state.day].name.toUpperCase()}</span><p class="speaker">${briefing.speaker}</p><h2>${briefing.title}</h2><p>${briefing.text}</p><div class="choices">${day.choices.map((c, i) => `<button class="choice" data-choice="${i}">${c[0]}<span>${c[1]}</span><span>${forecast(state,i,decide)}</span></button>`).join("")}</div><p>Daily essentials use 12 power. Charging restores 14 after Days 1–6. Below 15 power, essential systems struggle.</p><button class="secondary" id="back">Back to exploring</button>`,
-  );
-  document.getElementById("back").onclick = resume;
-  modal.querySelectorAll("[data-choice]").forEach(
-    (button) =>
-      (button.onclick = () => {
-        state = decide(state, Number(button.dataset.choice));
-        const saved = saveMission(state);
-        hud();
-        const last = state.log.at(-1);
-        show(
-          `<span class="kicker">DAY ${last.day} COMPLETE</span><h2>${last.choice}</h2><div class="nora-response"><strong>NORA · CREW CHANNEL</strong><p>${companionReaction(state)}</p></div>${saved ? "" : "<p>Your browser could not save progress. Keep this tab open to continue.</p>"}<ul>${last.notes.map((n) => `<li>${n}</li>`).join("")}</ul><aside><h3>Why this matters in real life</h3><p>${last.why}</p></aside><button id="continue">${state.ended ? "View report" : "Explore day " + (state.day + 1)} →</button>`,
-        );
-        document.getElementById("continue").onclick = state.ended
-          ? report
-          : resume;
-      }),
-  );
+  show(`<span class="kicker">DAY ${state.day+1} / ${stations[state.day].name}</span><h2>Choose your priority</h2><div class="choices">${day.choices.map((c,i)=>`<button class="choice" data-choice="${i}">${c[0]}<span>${c[1]}</span></button>`).join('')}</div><button class="secondary" id="back">Back to ship</button>`);
+  document.getElementById('back').onclick=resume;
+  modal.querySelectorAll('[data-choice]').forEach(button=>button.onclick=()=>{
+    const index=Number(button.dataset.choice);
+    startTask(state.day,index,day.choices[index][0],show,()=>{
+      state=decide(state,index);const saved=saveMission(state);hud();
+      const last=state.log.at(-1);
+      show(`<span class="kicker">SYSTEM UPDATED</span><h2>${last.choice}</h2><p>${companionReaction(state)}</p><details><summary>Resource changes & science</summary><p>${last.notes.join(' ')}</p><p>${last.why}</p></details>${saved?'':'<p>Progress could not be saved. Keep this tab open.</p>'}<button id="continue">${state.ended?'View report':'Back to ship →'}</button>`);
+      document.getElementById('continue').onclick=state.ended?report:resume;
+    },resume);
+  });
 }
+
 document.getElementById("interact").onclick = () => interact();
 const stationAccess=document.createElement('button');
 stationAccess.id='station-access';
-stationAccess.textContent='Mission console';
+stationAccess.textContent='Remote assist';
 stationAccess.onclick=()=>interact(true);
 document.body.append(stationAccess);
 document.getElementById("help").onclick = () => {
@@ -655,7 +648,7 @@ function frame(time) {
     if (clearAt(player.x + dx, player.z)) player.x += dx;
     if (clearAt(player.x, player.z + dz)) player.z += dz;
     velocity -= 1.62 * dt;
-    jumpY = Math.max(0, Math.min(2.4, jumpY + velocity * dt));
+    jumpY = Math.max(0, Math.min(1.1, jumpY + velocity * dt));
     if (jumpY === 0) velocity = 0;
   }
   camera.position.set(player.x, player.y + jumpY, player.z);
@@ -683,7 +676,7 @@ function frame(time) {
           ? "To your right"
           : "To your left";
   document.getElementById("objective").innerHTML =
-    `<span class="kicker">${state.day < 2 ? "SECURE THE LANDER" : state.day < 5 ? "KEEP THE CREW SAFE" : "BRING OUR WORK HOME"}</span><h2>${state.ended ? "Mission complete" : briefings[state.day].title}</h2><p>${state.ended ? "Open your mission report." : `Go to ${s.name} · ${Math.round(distance)} m · ${direction}`}</p><p class="objective-hint">${near ? "Press E or Interact to decide." : "Walk to the amber beacon or open Mission console."}</p>`;
+    `<span class="kicker">${state.day < 2 ? "SECURE THE LANDER" : state.day < 5 ? "KEEP THE CREW SAFE" : "BRING OUR WORK HOME"}</span><h2>${state.ended ? "Mission complete" : briefings[state.day].title}</h2><p>${state.ended ? "Open your mission report." : `Go to ${s.name} · ${Math.round(distance)} m · ${direction}`}</p><p class="objective-hint">${near ? "Press E or Interact to decide." : "Walk to the amber beacon or use Remote assist."}</p>`;
   document.getElementById("prompt").textContent = state.ended
     ? "Mission complete · E to view report"
     : near
