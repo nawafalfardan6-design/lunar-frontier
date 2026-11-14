@@ -600,12 +600,11 @@ export function buildSky(scene) {
       emissiveMap: earthTexture,
       emissive: 0xffffff,
       emissiveIntensity: 0.05,
-      depthWrite: false,
     }),
   );
   earth.position.set(-90, 140, -440);
   earth.rotation.y = -1.6;
-  earth.renderOrder = -999;
+  earth.renderOrder = -999; // drawn first; writes depth so stars stay behind it
   sky.add(earth);
   const atmosphere = new T.Mesh(
     new T.SphereGeometry(14.25, 64, 48),
