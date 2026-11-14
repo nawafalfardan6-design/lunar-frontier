@@ -4,8 +4,10 @@
 //   scene.js + landscape.js  3D world, lights, materials, terrain, sky
 //   ship.js                  ship interior layout and collision boxes
 //   controls.js              keyboard, mouse/touch look, movement physics
-//   hud.js                   HUD text, dialogs, menus, settings
-// Engine globals from engine.js (classic script): days, initial, decide, outcome.
+//   hud.js + mission-panels.js  HUD, dialogs, menus, settings
+//   tasks.js                 hands-on mini-games
+// Engine globals from engine.js (classic script): days, initial, decide, dailyBudget,
+// RESOURCES, RESOURCE_KEYS.
 import * as T from "./vendor/three.module.js";
 import { shipStations } from "./ship.js";
 import { createCompanion } from "./companion.js";
@@ -13,7 +15,7 @@ import { loadMission } from "./mission-session.js";
 import { createXR } from "./xr.js";
 import { createScene } from "./scene.js";
 import { createControls, createClearance, START_POSITION } from "./controls.js";
-import { createHud, createEntry, loadPreferences } from "./hud.js";
+import { createHud, createEntry, loadPreferences, currentStation } from "./hud.js";
 
 // Shared context. Modules read and write these fields at call time.
 const ctx = {
@@ -29,7 +31,7 @@ const ctx = {
   keys: new Set(), // KeyboardEvent.code values currently held
   player: new T.Vector3(...START_POSITION),
   obstacles: [], // collision boxes, filled while the ship is built
-  stations: shipStations, // one terminal per mission day
+  stations: shipStations, // ship terminals; days[i].station names each day's (currentStation)
   preferences: loadPreferences(),
   entry: null, // title-screen <section>, hud.js
   clearAt: null, // collision test, controls.js
@@ -45,7 +47,7 @@ ctx.clearAt = createClearance(ctx.obstacles);
 ctx.stage = createScene(ctx);
 ctx.hud = createHud(ctx);
 ctx.controls = createControls(ctx);
-const { stage, hud, controls, player, stations, preferences } = ctx;
+const { stage, hud, controls, player, preferences } = ctx;
 
 window.addEventListener("resize", stage.resize);
 stage.resize();
@@ -61,10 +63,13 @@ ctx.xr = createXR({
   move: controls.move,
   status() {
     const { state } = ctx;
-    const station = stations[Math.min(state.day, 6)];
+    const station = currentStation(ctx);
     ctx.near = Math.hypot(station.x - player.x, station.z - player.z) < 3.4;
     if (state.ended) return "Mission complete\nPull trigger to view report";
-    return `DAY ${state.day + 1} / 7\nPower ${state.power} · Life support ${state.life} · Safety ${state.safety}\n${station.name}\n${ctx.near ? "Pull trigger to interact" : "Follow the amber marker"}\nLeft stick: move · Right stick: snap turn`;
+    const meters = RESOURCE_KEYS.map((key) => `${RESOURCES[key].label} ${state[key]}`).join(" · ");
+    const sky = dailyBudget(state.day).sunlight ? "Daylight" : "Lunar night: heaters on";
+    const warnings = state.warnings.map((w) => `Warning: ${w.text}`).join("\n");
+    return `DAY ${state.day + 1} OF ${days.length} · ${sky}\n${meters}\n${warnings ? warnings + "\n" : ""}Go to: ${station.name}\n${ctx.near ? "Pull trigger to use the terminal" : "Follow the amber marker"}\nLeft stick: move · Right stick: snap turn`;
   },
 });
 ctx.xr
@@ -79,15 +84,15 @@ let previous = performance.now();
 function frame(time) {
   const dt = Math.min((time - previous) / 1000, 0.05);
   previous = time;
-  const { state } = ctx;
   const motion = ctx.playing && !dialog.open && !ctx.inMenu && !preferences.reducedMotion;
   stage.animateBackdrop(time, dt, motion);
-  const activeTarget = stations[Math.min(state.day, 6)];
+  // Today's terminal: the beacon (scene.js), the trail and the on-screen marker point at it.
+  const activeTarget = currentStation(ctx);
   stage.guidance.update(
     dt,
     player,
     activeTarget,
-    ctx.playing && !ctx.inMenu && !dialog.open && !state.ended,
+    ctx.playing && !ctx.inMenu && !dialog.open && !ctx.state.ended,
   );
   hud.updateMarker(activeTarget);
   if (stage.renderer.xr.isPresenting) {
@@ -105,9 +110,8 @@ function frame(time) {
   }
   controls.update(dt, stage.camera);
   stage.animateIdle(time, preferences.reducedMotion);
-  const s = stations[Math.min(state.day, 6)];
-  ctx.near = Math.hypot(s.x - player.x, s.z - player.z) < 3.4;
-  hud.updateFrameText(s);
+  ctx.near = Math.hypot(activeTarget.x - player.x, activeTarget.z - player.z) < 3.4;
+  hud.updateFrameText(activeTarget);
   stage.render();
 }
 

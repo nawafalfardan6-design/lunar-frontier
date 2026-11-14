@@ -1,0 +1,1021 @@
+/* hud.css: the mission HUD and the mission dialogs (hud.js and mission-panels.js).
+   Loaded last, so it overrides the older #hud and #objective rules in world.css,
+   indie.css, player.css and flight.css. Same look: dark translucent panels and
+   uppercase monospace kicker labels, with bigger text for young players. */
+:root {
+  --lf-panel: #11171ee6;
+  --lf-line: #8a9aa955;
+  --lf-text: #eef2f5;
+  --lf-muted: #b6c2cc;
+  --lf-fill: #a4bbcf;
+  --lf-accent: #c8b178;
+  --lf-good: #93e3ad;
+  --lf-good-bg: #1c3a2a;
+  --lf-bad: #ffa597;
+  --lf-bad-bg: #46211d;
+  --lf-warn: #f5c35c;
+  --lf-warn-bg: #3b2c0fe6;
+  --lf-star: #ffd166;
+  --lf-sun: #ffd98a;
+  --lf-moon: #c3cfff;
+  --lf-mono: "IBM Plex Mono", "Space Mono", monospace;
+  --lf-sans: Arial, Helvetica, sans-serif;
+}
+
+/* Screen-reader-only text. */
+.lf-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* HUD: day, sunlight, meters and stars (top left)                     */
+/* ------------------------------------------------------------------ */
+#hud {
+  top: 92px;
+  left: 24px;
+  right: auto;
+  width: 272px;
+  display: block;
+  padding: 14px 16px 12px;
+  color: var(--lf-text);
+  font-family: var(--lf-sans);
+  background: var(--lf-panel);
+  border: 1px solid var(--lf-line);
+  border-left: 3px solid #8fb9b4;
+  border-radius: 8px 8px 24px 8px;
+  box-shadow: 0 8px 30px #0006;
+  backdrop-filter: blur(12px);
+  transform: none;
+}
+#hud .kicker,
+#objective .kicker {
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 11px var(--lf-mono);
+  letter-spacing: 1.5px;
+  color: #c9d4dd;
+}
+#hud .lf-day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ffffff1c;
+}
+#hud .lf-sun {
+  font: 700 16px/1.25 var(--lf-sans);
+  color: var(--lf-sun);
+}
+#hud .lf-night {
+  color: var(--lf-moon);
+}
+#hud .lf-sun small {
+  display: block;
+  margin: 3px 0 0;
+  font: 12px/1.3 var(--lf-sans);
+  letter-spacing: 0;
+  color: var(--lf-muted);
+}
+#hud .lf-meters {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+#hud .lf-meter {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 4px;
+  margin: 0;
+  font: 600 14px/1.2 var(--lf-sans);
+  color: var(--lf-text);
+}
+#hud .lf-icon {
+  font-size: 16px;
+  text-align: center;
+}
+#hud .lf-meter b {
+  font: 700 17px/1 var(--lf-sans);
+  font-variant-numeric: tabular-nums;
+}
+#hud .lf-bar {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 7px;
+  border-radius: 4px;
+  background: #ffffff1f;
+}
+#hud .lf-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: var(--lf-fill);
+  transition: width 0.6s;
+}
+/* The goal line on each bar (danger line, or the research goal for Science). */
+#hud .lf-bar em {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: #ffffffb0;
+}
+#hud .lf-low b,
+#hud .lf-low .lf-name {
+  color: var(--lf-warn);
+}
+#hud .lf-low .lf-bar i {
+  background: var(--lf-warn);
+}
+#hud .lf-danger b,
+#hud .lf-danger .lf-name {
+  color: #ff7b6b;
+}
+#hud .lf-danger .lf-bar i {
+  background: #ff5f4f;
+}
+#hud .lf-danger b {
+  animation: lf-blink 1s ease-in-out infinite alternate;
+}
+@keyframes lf-blink {
+  to {
+    opacity: 0.45;
+  }
+}
+
+/* Stars: a button that opens the mission goals. The HUD itself ignores the pointer. */
+#hud .lf-stars {
+  pointer-events: auto;
+  display: block;
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 9px 0 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-top: 1px solid #ffffff1c;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+#hud .lf-stars:hover:not(:disabled) {
+  background: #ffffff0a;
+  border-color: #ffffff1c;
+}
+#hud .lf-tap {
+  color: #8e9ca8;
+}
+#hud .lf-star-list {
+  display: grid;
+  gap: 3px;
+  margin-top: 5px;
+}
+#hud .lf-star {
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  font: 13px/1.3 var(--lf-sans);
+  color: var(--lf-muted);
+}
+#hud .lf-star i {
+  font-style: normal;
+  font-size: 16px;
+  color: #8796a3;
+}
+#hud .lf-star.earned {
+  color: var(--lf-text);
+}
+#hud .lf-star.earned i {
+  color: var(--lf-star);
+  text-shadow: 0 0 8px #ffd16699;
+}
+
+/* ------------------------------------------------------------------ */
+/* Today's job and warnings (top right)                                */
+/* ------------------------------------------------------------------ */
+#objective {
+  top: 92px;
+  right: 24px;
+  left: auto;
+  width: 330px;
+  padding: 14px 18px 14px 16px;
+  color: var(--lf-text);
+  background: linear-gradient(90deg, #11171ef0, #11171ed0);
+  border: 1px solid var(--lf-line);
+  border-left: 3px solid var(--lf-accent);
+  border-radius: 0 24px 24px 0;
+  box-shadow: 0 8px 30px #0006;
+  backdrop-filter: blur(12px);
+  transform: none;
+}
+#objective .kicker {
+  color: #dcc590;
+}
+#objective h2 {
+  margin: 6px 0 4px;
+  font: 700 22px/1.2 var(--lf-sans);
+  letter-spacing: 0;
+  color: #fff;
+}
+#objective .lf-goto {
+  margin: 0;
+  font: 15px/1.4 var(--lf-sans);
+  color: #d5dee6;
+}
+#objective .lf-goto b {
+  color: #bceaff;
+}
+#objective .lf-warnings {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+#objective .lf-warnings li {
+  margin: 0;
+  padding: 8px 10px;
+  font: 13px/1.35 var(--lf-sans);
+  color: #f3e3c0;
+  background: var(--lf-warn-bg);
+  border: 1px solid #f5c35c55;
+  border-radius: 6px;
+}
+#objective .lf-warnings b {
+  display: block;
+  color: var(--lf-warn);
+}
+#objective .lf-fix {
+  display: block;
+  margin-top: 3px;
+}
+
+/* The panels stay above the on-screen destination marker. */
+#hud,
+#objective {
+  z-index: 5;
+}
+#prompt {
+  font: 600 16px var(--lf-sans);
+}
+
+/* Phones and short screens: icons and values only. */
+@media (max-width: 700px), (max-height: 520px) {
+  #hud {
+    width: 300px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 8px 8px 18px 8px;
+  }
+  #hud .lf-day {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+    padding: 0;
+    border: 0;
+  }
+  #hud .lf-sun {
+    font-size: 13px;
+  }
+  #hud .lf-sun small,
+  #hud .lf-name,
+  #hud .lf-stars .kicker,
+  #hud .lf-star span {
+    display: none;
+  }
+  #hud .lf-meters {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 0;
+  }
+  #hud .lf-meter {
+    grid-template-columns: auto 1fr;
+    font-size: 13px;
+  }
+  #hud .lf-meter b {
+    font-size: 15px;
+  }
+  #hud .lf-bar {
+    height: 5px;
+  }
+  #hud .lf-stars {
+    grid-row: 1;
+    grid-column: 2;
+    width: auto;
+    margin: 0;
+    padding: 2px 4px;
+    border: 0;
+  }
+  #hud .lf-star-list {
+    display: flex;
+    gap: 1px;
+    margin: 0;
+  }
+  #hud .lf-star i {
+    font-size: 20px;
+  }
+  #objective {
+    width: 300px;
+    padding: 8px 12px;
+    border-radius: 0 16px 16px 0;
+  }
+  #objective h2 {
+    margin: 3px 0 2px;
+    font-size: 17px;
+  }
+  #objective .lf-goto {
+    font-size: 13px;
+  }
+  #objective .lf-warnings {
+    gap: 4px;
+    margin-top: 6px;
+  }
+  #objective .lf-warnings li {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  #objective .lf-fix {
+    display: none;
+  }
+}
+/* Portrait phones: both panels span the screen, one under the other. */
+@media (max-width: 700px) {
+  #hud {
+    top: 58px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+  #objective {
+    top: 132px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+}
+/* Landscape phones: panels in the top corners. */
+@media (max-height: 520px) and (min-width: 701px) {
+  #hud {
+    top: 56px;
+    left: 12px;
+  }
+  #objective {
+    top: 56px;
+    right: 12px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Dialog building blocks                                              */
+/* ------------------------------------------------------------------ */
+dialog:has(.lf-wide) {
+  width: min(1080px, 96vw);
+  max-height: 96dvh;
+  padding: 18px 30px 22px;
+}
+dialog:has(.lf-goals) {
+  width: min(820px, 94vw);
+  max-height: 96dvh;
+  padding: 20px 30px;
+}
+#modal [tabindex="-1"]:focus {
+  outline: none;
+}
+dialog .lf-panel h2 {
+  margin: 4px 0 10px;
+  font: 700 30px/1.15 var(--lf-sans);
+  color: #fff;
+}
+dialog .lf-subhead {
+  margin: 16px 0 8px;
+  font: 700 12px var(--lf-mono);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--lf-accent);
+}
+dialog .lf-hint {
+  margin: 0;
+  font: 13px/1.4 var(--lf-sans);
+  color: #9fb0bf;
+}
+.lf-pickrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+  margin: 14px 0 8px;
+}
+dialog .lf-pickrow .lf-subhead {
+  margin: 0;
+}
+
+/* Effect chips: green when a meter goes up, red when it goes down. */
+.lf-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1px solid;
+  border-radius: 999px;
+  font: 700 15px/1.2 var(--lf-sans);
+  white-space: nowrap;
+}
+.lf-up {
+  color: var(--lf-good);
+  background: var(--lf-good-bg);
+  border-color: #5fbf8566;
+}
+.lf-down {
+  color: var(--lf-bad);
+  background: var(--lf-bad-bg);
+  border-color: #d9675b66;
+}
+.lf-none {
+  font-weight: 400;
+  color: var(--lf-muted);
+  background: #ffffff10;
+  border-color: #ffffff22;
+}
+.lf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.lf-row-label {
+  min-width: 112px;
+  font: 700 11px var(--lf-mono);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #a7b6c3;
+}
+
+/* Tone-styled notes and forecast lines. */
+.lf-lines,
+.lf-notes {
+  display: grid;
+  gap: 5px;
+}
+.lf-line,
+dialog .lf-note {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font: 14px/1.4 var(--lf-sans);
+  color: #cfd9e1;
+  background: #ffffff0d;
+}
+dialog .lf-note {
+  font-size: 16px;
+}
+.lf-line.lf-good,
+dialog .lf-note.lf-good {
+  color: #bff3cf;
+  background: var(--lf-good-bg);
+}
+.lf-line.lf-bad,
+dialog .lf-note.lf-bad {
+  color: #ffc6bd;
+  background: var(--lf-bad-bg);
+}
+.lf-line.lf-warn {
+  color: #ffe1a3;
+  background: var(--lf-warn-bg);
+}
+dialog .lf-notes {
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Warnings box, today's budget and "coming up". */
+.lf-alert {
+  margin: 10px 0;
+  padding: 10px 14px;
+  background: var(--lf-warn-bg);
+  border: 1px solid #f5c35c66;
+  border-radius: 8px;
+}
+dialog .lf-alert-title {
+  margin: 0 0 6px;
+  font: 700 12px var(--lf-mono);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--lf-warn);
+}
+.lf-alert ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+dialog .lf-alert li {
+  margin: 0;
+  font: 15px/1.4 var(--lf-sans);
+  color: #f3e3c0;
+}
+.lf-alert b {
+  color: #ffd57e;
+}
+.lf-due {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font: 700 12px var(--lf-sans);
+  color: #ffd57e;
+  background: #f5c35c33;
+}
+.lf-alert .lf-fix {
+  display: block;
+}
+dialog .lf-budget {
+  margin: 10px 0;
+  padding: 10px 14px;
+  font: 15px/1.45 var(--lf-sans);
+  color: #f5ebd2;
+  background: #2c2a1ccc;
+  border: 1px solid #ffd98a44;
+  border-radius: 8px;
+}
+dialog .lf-budget.lf-night {
+  color: #e1e6ff;
+  background: #1e2442cc;
+  border-color: #c3cfff44;
+}
+dialog .lf-coming {
+  margin: 8px 0;
+  font: 15px/1.4 var(--lf-sans);
+  color: #f3e3c0;
+}
+dialog .lf-coming b {
+  color: var(--lf-warn);
+}
+
+/* ------------------------------------------------------------------ */
+/* Choice dialog                                                       */
+/* ------------------------------------------------------------------ */
+/* Briefing on the left; budget, warnings and "coming up" on the right. */
+.lf-context {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 4px 24px;
+  align-items: start;
+}
+.lf-context .lf-budget {
+  margin-top: 4px;
+}
+.lf-brief {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin: 4px 0 8px;
+}
+.lf-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid #9cafc0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #5b7389, #172634);
+  font: 700 17px var(--lf-sans);
+  color: #e8f1f8;
+}
+dialog .lf-speaker {
+  margin: 0;
+  font: 700 13px var(--lf-sans);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #9fc6c2;
+}
+dialog .lf-quote {
+  margin: 4px 0 0;
+  font: 18px/1.5 var(--lf-sans);
+  color: #eef3f6;
+}
+dialog .lf-story {
+  margin: 0 0 8px;
+  font: 15px/1.5 var(--lf-sans);
+  color: #b8c6d1;
+}
+.lf-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+  margin: 0 0 6px;
+}
+dialog .lf-choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  margin: 0;
+  padding: 14px 18px;
+  text-align: left;
+  font: inherit;
+  color: #fff;
+  background: linear-gradient(#303d49, #202c37);
+  border: 1px solid #778a9a66;
+  border-left: 4px solid #b3c4d2;
+  border-radius: 6px 18px 6px 6px;
+  box-shadow: 0 6px 18px #0004;
+  cursor: pointer;
+}
+dialog .lf-choice:hover:not(:disabled),
+dialog .lf-choice:focus-visible {
+  background: linear-gradient(#3b4c5b, #27353f);
+  border-color: #a9bccb88;
+  border-left-color: var(--lf-sun);
+}
+.lf-choice > span {
+  display: block;
+  margin: 0;
+}
+.lf-choice .lf-row {
+  display: flex;
+}
+.lf-choice .lf-lines {
+  display: grid;
+}
+.lf-line {
+  display: block;
+}
+.lf-choice-label {
+  font: 700 21px/1.2 var(--lf-sans);
+  color: #fff;
+}
+.lf-kind {
+  font: 12px var(--lf-mono);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--lf-accent);
+}
+.lf-summary {
+  font: 16px/1.45 var(--lf-sans);
+  color: #cdd8e0;
+}
+.lf-after {
+  padding-top: 8px;
+  border-top: 1px dashed #ffffff22;
+}
+/* "Choose this" sits in the card's top-right corner (at the bottom on phones). */
+.lf-choice-label {
+  padding-right: 116px;
+}
+.lf-pick {
+  position: absolute;
+  top: 17px;
+  right: 18px;
+  font: 700 15px var(--lf-sans);
+  color: var(--lf-sun);
+}
+
+/* ------------------------------------------------------------------ */
+/* Result dialog                                                       */
+/* ------------------------------------------------------------------ */
+.lf-columns {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+dialog .lf-lead {
+  margin: 0 0 12px;
+  font: 600 20px/1.45 var(--lf-sans);
+  color: #fff;
+}
+dialog .lf-fixed {
+  margin: 8px 0;
+  font: 600 15px/1.4 var(--lf-sans);
+  color: #bff3cf;
+}
+.lf-nora {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  background: #1f343bcc;
+  border-left: 3px solid #8fb9b4;
+  border-radius: 4px 14px 14px 4px;
+}
+.lf-nora .companion-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+}
+dialog .lf-nora p {
+  margin: 0;
+  font: 16px/1.45 var(--lf-sans);
+  color: #e1ecec;
+}
+dialog .lf-nora b {
+  color: #b5ded5;
+}
+dialog .lf-why {
+  margin: 0;
+  padding: 14px 18px;
+  background: #1b2833;
+  border: 1px solid #a4bbcf33;
+  border-left: 3px solid var(--lf-fill);
+  border-radius: 4px 16px 4px 4px;
+}
+dialog .lf-why h3 {
+  margin: 0 0 8px;
+  font: 700 17px var(--lf-sans);
+  color: #dce8f2;
+}
+dialog .lf-why p {
+  margin: 0 0 12px;
+  font: 16px/1.55 var(--lf-sans);
+  color: #c9d5df;
+}
+dialog .lf-source {
+  margin: 0;
+}
+dialog .lf-source a {
+  display: inline-block;
+  padding: 9px 16px;
+  font: 700 15px var(--lf-sans);
+  color: #eaf4fb;
+  text-decoration: none;
+  background: #2c4152;
+  border: 1px solid #a4bbcf77;
+  border-radius: 999px;
+}
+dialog .lf-source a:hover {
+  background: #3a5469;
+}
+dialog .lf-source small {
+  display: block;
+  margin: 6px 0 0;
+  font: 12px/1.4 var(--lf-sans);
+  letter-spacing: 0;
+  color: #93a5b4;
+}
+dialog .lf-small {
+  font-size: 14px;
+  color: var(--lf-warn);
+}
+dialog .lf-primary {
+  margin: 18px 12px 0 0;
+  padding: 14px 26px;
+  font: 700 17px var(--lf-sans);
+  color: #111b24;
+  background: linear-gradient(#d3dde6, #9fb2c3);
+  border: 1px solid #dfe8ef;
+  border-radius: 6px;
+}
+dialog .lf-primary:hover:not(:disabled) {
+  background: linear-gradient(#e2eaf1, #b1c3d2);
+  border-color: #fff;
+}
+
+/* ------------------------------------------------------------------ */
+/* Mission report and goals                                            */
+/* ------------------------------------------------------------------ */
+.lf-bigstars {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px 0 0;
+}
+.lf-bigstars span {
+  font-size: 62px;
+  line-height: 1;
+  color: #56636f;
+}
+.lf-bigstars .earned {
+  color: var(--lf-star);
+  text-shadow:
+    0 0 20px #ffd16699,
+    0 0 2px #fff8;
+  animation: lf-pop 0.55s calc(var(--i) * 0.18s + 0.15s) both cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+@keyframes lf-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-50deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.reduce-motion .lf-bigstars .earned,
+.reduce-motion #hud .lf-danger b {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lf-bigstars .earned,
+  #hud .lf-danger b {
+    animation: none;
+  }
+}
+dialog .lf-report h1 {
+  margin: 6px 0;
+  text-align: center;
+  font: 700 40px/1.1 var(--lf-sans);
+}
+.lf-report-success h1 {
+  color: #bff3cf;
+}
+.lf-report-partial h1 {
+  color: var(--lf-sun);
+}
+.lf-report-early h1 {
+  color: var(--lf-bad);
+}
+dialog .lf-report > .lf-lead {
+  max-width: 700px;
+  margin: 0 auto 8px;
+  font-size: 18px;
+  text-align: center;
+}
+.lf-report .kicker {
+  text-align: center;
+}
+.lf-crew,
+.lf-starlist,
+.lf-week {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+dialog .lf-crew li {
+  margin: 0;
+  font: 16px/1.4 var(--lf-sans);
+  color: #dce5ec;
+}
+dialog .lf-crew li.lf-bad {
+  color: var(--lf-bad);
+}
+dialog .lf-crew small,
+dialog .lf-starlist small {
+  display: inline;
+  margin: 0;
+  font: 13px/1.4 var(--lf-sans);
+  letter-spacing: 0;
+  color: #9fb0bf;
+}
+dialog .lf-starlist li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 0;
+  font: 15px/1.4 var(--lf-sans);
+  color: #c5d2dc;
+}
+.lf-starlist .lf-bigstar {
+  flex: none;
+  width: 36px;
+  font-size: 34px;
+  line-height: 1;
+  text-align: center;
+  color: #6b7885;
+}
+.lf-starlist .earned .lf-bigstar {
+  color: var(--lf-star);
+  text-shadow: 0 0 12px #ffd16688;
+}
+.lf-starlist b {
+  font-size: 17px;
+  color: #fff;
+}
+.lf-starlist em {
+  margin-left: 4px;
+  font: 700 13px var(--lf-sans);
+  color: #9fb0bf;
+}
+.lf-starlist .earned em {
+  color: var(--lf-star);
+}
+dialog .lf-starlist small {
+  display: block;
+  margin-top: 2px;
+}
+.lf-week {
+  gap: 5px !important;
+}
+dialog .lf-week li {
+  display: grid;
+  grid-template-columns: 50px 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  margin: 0;
+  padding: 6px 10px;
+  font: 15px/1.3 var(--lf-sans);
+  color: #dce5ec;
+  background: #ffffff09;
+  border-radius: 6px;
+}
+.lf-week-day {
+  font: 700 12px var(--lf-mono);
+  text-transform: uppercase;
+  color: var(--lf-accent);
+}
+.lf-week-choice {
+  font-weight: 700;
+  color: #fff;
+}
+dialog .lf-week-bad {
+  grid-column: 2 / -1;
+  display: block;
+  margin: 0;
+  font: 13px/1.35 var(--lf-sans);
+  letter-spacing: 0;
+  color: var(--lf-bad);
+}
+.lf-week-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.lf-week .lf-chip {
+  padding: 1px 7px;
+  font-size: 13px;
+}
+.lf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.lf-actions button {
+  margin: 12px 0 0 !important;
+}
+/* Pause menu buttons. */
+.lf-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.lf-menu button {
+  margin: 0 !important;
+}
+dialog .lf-goals .lf-starlist {
+  margin: 14px 0;
+}
+
+/* Phones: one column, slightly smaller type. */
+@media (max-width: 700px) {
+  dialog:has(.lf-wide) {
+    width: 96vw;
+    padding: 18px 16px;
+  }
+  dialog .lf-panel h2 {
+    font-size: 24px;
+  }
+  .lf-columns,
+  .lf-context,
+  .lf-choices {
+    grid-template-columns: 1fr;
+  }
+  dialog .lf-quote {
+    font-size: 16px;
+  }
+  dialog .lf-story {
+    font-size: 14px;
+  }
+  .lf-choice-label {
+    padding-right: 0;
+    font-size: 19px;
+  }
+  .lf-pick {
+    position: static;
+  }
+  .lf-row-label {
+    min-width: 104px;
+  }
+  .lf-bigstars span {
+    font-size: 50px;
+  }
+  dialog .lf-report h1 {
+    font-size: 30px;
+  }
+}
