@@ -182,8 +182,16 @@ export function moonGlobe() {
   const a = albedoCanvas.getContext("2d"),
     h = heightCanvas.getContext("2d");
   const rnd = seeded(4242);
-  a.fillStyle = "#a9a59e";
-  a.fillRect(0, 0, W, H);
+  // Highland base colour with fine grain (written directly: no slow read-back).
+  const pixels = a.createImageData(W, H);
+  for (let i = 0; i < pixels.data.length; i += 4) {
+    const n = (rnd() - 0.5) * 14;
+    pixels.data[i] = 169 + n;
+    pixels.data[i + 1] = 165 + n;
+    pixels.data[i + 2] = 158 + n;
+    pixels.data[i + 3] = 255;
+  }
+  a.putImageData(pixels, 0, 0);
   h.fillStyle = "#808080";
   h.fillRect(0, 0, W, H);
 
@@ -250,7 +258,7 @@ export function moonGlobe() {
       ]);
     }
   // Impact craters, mostly small, a few large.
-  for (let i = 0; i < 950; i++) {
+  for (let i = 0; i < 700; i++) {
     const lon = rnd() * 360 - 180,
       lat = Math.asin(rnd() * 1.9 - 0.95) * 57.3,
       r = 0.3 + rnd() ** 4 * 6;
@@ -298,15 +306,6 @@ export function moonGlobe() {
       [1, "rgba(250,247,240,0)"],
     ]);
   }
-  // Fine grain on top of everything.
-  const pixels = a.getImageData(0, 0, W, H);
-  for (let i = 0; i < pixels.data.length; i += 4) {
-    const n = (rnd() - 0.5) * 14;
-    pixels.data[i] += n;
-    pixels.data[i + 1] += n;
-    pixels.data[i + 2] += n;
-  }
-  a.putImageData(pixels, 0, 0);
 
   const map = new T.CanvasTexture(albedoCanvas);
   map.colorSpace = T.SRGBColorSpace;
