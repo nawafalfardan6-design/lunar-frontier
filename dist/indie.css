@@ -44,6 +44,10 @@ dialog summary { font-size:12px; line-height:1.7; }
 @media(pointer:coarse) { footer{font-size:0} }
 @media(prefers-reduced-motion:reduce) { button{transition:none} }
 #entry { display:none; }
+#enter-vr { display:none; position:fixed; right:24px; bottom:66px; z-index:9; }
+.vr-supported #enter-vr { display:block; }
+@media(pointer:coarse) { #enter-vr { bottom:88px; } }
+@media(max-width:370px) { #hud {width:40vw} #objective {width:46vw} }
 .title-screen header,.title-screen #hud,.title-screen #objective,.title-screen #crosshair,.title-screen #prompt,.title-screen footer,.title-screen #touch { display:none; }
 .title-screen #entry { display:block; position:fixed; inset:0; overflow:auto; background:linear-gradient(90deg,#201c38ed, #201c3890 38%,transparent 70%); }
 .entry-panel { position:relative; width:510px; max-width:90%; margin:9vh 0 80px 8vw; }

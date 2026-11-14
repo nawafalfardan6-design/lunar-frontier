@@ -1,4 +1,5 @@
 import * as T from "./vendor/three.module.js";
+import { createXR, astronautGlove } from './xr.js';
 const canvas = document.getElementById("world"),
   dialog = document.getElementById("dialog"),
   modal = document.getElementById("modal");
@@ -531,6 +532,7 @@ function report() {
 }
 function interact() {
   if (dialog.open || !playing) return;
+  gloveReach = 1;
   if (state.ended) {
     report();
     return;
@@ -586,6 +588,7 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("keyup", (e) => keys.delete(e.code));
 function pause() {
   keys.clear();
+  if (renderer.xr.isPresenting) return;
   if (!playing || dialog.open) return;
   playing = false;
   show(
@@ -663,10 +666,46 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 let previous = performance.now();
+const glove = astronautGlove();
+camera.add(glove);
+let gloveReach = 0;
+const xr = createXR({renderer, scene, camera, dialog, modal, interact, position: player,
+  move(dx,dz) {
+    if (clearAt(player.x + dx, player.z)) player.x += dx;
+    if (clearAt(player.x, player.z + dz)) player.z += dz;
+  },
+  status() {
+    const station = stations[Math.min(state.day, 6)];
+    near = Math.hypot(station.x-player.x, station.z-player.z) < 3.4;
+    if (state.ended) return 'Mission complete\nPull trigger to view report';
+    return `DAY ${state.day + 1} / 7\nPower ${state.power} · Life support ${state.life} · Safety ${state.safety}\n${station.name}\n${near ? 'Pull trigger to interact' : 'Follow the amber marker'}\nLeft stick: move · Right stick: snap turn`;
+  }
+});
+xr.supported().then(supported => { if (supported) document.body.classList.add('vr-supported'); }).catch(() => {});
+const vrButton = document.createElement('button');
+vrButton.id = 'enter-vr';
+vrButton.textContent = 'Enter VR';
+document.body.append(vrButton);
+vrButton.onclick = async () => {
+  vrButton.disabled = true;
+  try { await xr.enter(); resume(); } catch {
+    show('<h2>VR could not start</h2><p>Open the game directly in Quest Browser and try again.</p><button id="vr-close">Close</button>');
+    document.getElementById('vr-close').onclick = () => dialog.close();
+  } finally { vrButton.disabled = false; }
+};
 function frame(time) {
-  requestAnimationFrame(frame);
   const dt = Math.min((time - previous) / 1000, 0.05);
   previous = time;
+  if (renderer.xr.isPresenting) {
+    glove.visible = false;
+    xr.update(dt);
+    renderer.render(scene, camera);
+    return;
+  }
+  glove.visible = true;
+  gloveReach = Math.max(0, gloveReach - dt * 2.8);
+  glove.position.set(0.30 - gloveReach * 0.12, -0.32 + gloveReach * 0.08, -0.52 - gloveReach * 0.17);
+  glove.rotation.x = -0.28 - gloveReach * 0.6;
   if (inMenu) {
     if (!preferences.reducedMotion) menuMoon.rotation.y += dt * 0.045;
     renderer.render(menuScene, menuCamera);
@@ -728,4 +767,4 @@ function frame(time) {
 hud();
 applyPreferences();
 titleScreen();
-requestAnimationFrame(frame);
+renderer.setAnimationLoop(frame);
