@@ -1,8 +1,24 @@
 // Local development panel. Inspection and movement tools do not alter mission saves.
 import { START_POSITION } from "./controls.js";
 
+// Replay earlier choices so flags, warnings and resource totals match the selected day.
+export function debugDayState(day, source, engine) {
+  if (!Number.isInteger(day) || day < 0 || day >= engine.days.length) {
+    throw new RangeError("Invalid mission day");
+  }
+  let state = engine.initial();
+  for (let index = 0; index < day; index++) {
+    const choiceId = source.log[index]?.choiceId;
+    const saved = engine.days[index].choices.findIndex((choice) => choice.id === choiceId);
+    state = engine.decide(state, saved >= 0 ? saved : 0);
+  }
+  state.debugPreview = true;
+  return state;
+}
+
 export function createDebugMenu(ctx) {
   let opened = false;
+  let changedDay = false;
   let previousPanel = null;
   let previousFocus = null;
   let hadDialog = false;
@@ -16,7 +32,9 @@ export function createDebugMenu(ctx) {
     clearInterval(timer);
     ctx.keys.clear();
     ctx.modal.replaceChildren();
-    if (hadDialog) {
+    if (changedDay) {
+      ctx.hud.resume();
+    } else if (hadDialog) {
       ctx.modal.append(previousPanel);
       previousFocus?.focus();
     } else if (ctx.inMenu) {
@@ -31,6 +49,7 @@ export function createDebugMenu(ctx) {
   function open() {
     if (ctx.stage.renderer.xr.isPresenting) return;
     opened = true;
+    changedDay = false;
     hadDialog = ctx.dialog.open;
     previousFocus = document.activeElement;
     previousPanel = document.createDocumentFragment();
@@ -39,8 +58,12 @@ export function createDebugMenu(ctx) {
       <section class="debug-panel">
         <span class="kicker">DEVELOPER TOOLS</span>
         <h2>Debug menu</h2>
-        <p>Ctrl + ' or Escape closes this menu. Mission saves are unchanged.</p>
+        <p>Ctrl + ' or Escape closes this menu. Day changes are for testing and are not saved. Reload to return to saved progress.</p>
         <pre id="debug-status" aria-label="Game status"></pre>
+        <label for="debug-day">Mission day</label>
+        <select id="debug-day"></select>
+        <button id="debug-set-day">Go to day</button>
+        <p>Earlier days use your recorded choices, or the first option when none exists.</p>
         <label for="debug-station">Teleport to station</label>
         <select id="debug-station"></select>
         <div class="debug-actions">
@@ -51,6 +74,11 @@ export function createDebugMenu(ctx) {
         </div>
         <p id="debug-message" role="status"></p>
       </section>`);
+    const daySelect = document.getElementById("debug-day");
+    days.forEach((day, index) => {
+      daySelect.add(new Option(`Day ${index + 1}`, String(index)));
+    });
+    daySelect.value = String(Math.min(ctx.state.day, days.length - 1));
     const select = document.getElementById("debug-station");
     ctx.stations.forEach((station, index) => {
       select.add(new Option(station.name, String(index)));
@@ -59,7 +87,7 @@ export function createDebugMenu(ctx) {
     const refresh = () => {
       const info = ctx.stage.renderer.info.render;
       status.textContent = [
-        `Day: ${ctx.state.day + 1} / ${days.length}${ctx.state.ended ? " (ended)" : ""}`,
+        `Day: ${Math.min(ctx.state.day + 1, days.length)} / ${days.length}${ctx.state.ended ? " (ended)" : ""}${ctx.state.debugPreview ? " — test mode" : ""}`,
         ...RESOURCE_KEYS.map((key) => `${RESOURCES[key].label}: ${ctx.state[key]}`),
         `Position: ${ctx.player.x.toFixed(2)}, ${ctx.player.y.toFixed(2)}, ${ctx.player.z.toFixed(2)}`,
         `Draw calls: ${info.calls} | Triangles: ${info.triangles}`,
@@ -68,6 +96,20 @@ export function createDebugMenu(ctx) {
     refresh();
     timer = setInterval(refresh, 300);
     const message = document.getElementById("debug-message");
+    document.getElementById("debug-set-day").onclick = () => {
+      ctx.state = debugDayState(Number(daySelect.value), ctx.state, { days, initial, decide });
+      ctx.missionStarted = true;
+      changedDay = true;
+      // A terminal or result panel from the old day must not retain stale handlers.
+      hadDialog = false;
+      previousPanel = null;
+      ctx.hud.updateMeters();
+      const stationIndex = ctx.stations.findIndex((station) =>
+        station.name === days[ctx.state.day].station);
+      if (stationIndex >= 0) select.value = String(stationIndex);
+      message.textContent = `Day ${ctx.state.day + 1} selected. Close the menu to play it.`;
+      refresh();
+    };
     document.getElementById("debug-teleport").onclick = () => {
       const station = ctx.stations[Number(select.value)];
       let spot = null;

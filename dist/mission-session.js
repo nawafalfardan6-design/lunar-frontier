@@ -29,6 +29,8 @@ function discard(key) {
 
 /** Save the mission. Returns true if it worked (storage can be blocked). */
 export function saveMission(state) {
+  // Debug day jumps and subsequent test choices must not overwrite the real mission.
+  if (state.debugPreview) return true;
   try {
     const choices = state.log.map(entry => entry.choiceId);
     if (choices.some(id => typeof id !== 'string')) return false;
