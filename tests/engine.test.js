@@ -56,7 +56,7 @@ check(E.RESOURCES.science.start === 0, 'Science starts at 0');
 
 // STATIONS must be real terminals in ship.js (read as text: it is an ES module that imports three.js).
 const shipSource = fs.readFileSync(path.join(__dirname, '..', 'dist', 'ship.js'), 'utf8');
-const shipNames = [...shipSource.matchAll(/name:\s*'([^']+)'/g)].map(match => match[1]);
+const shipNames = [...shipSource.matchAll(/name:\s*["'`]([^"'`]+)["'`]/g)].map(match => match[1]);
 for (const station of E.STATIONS) check(shipNames.includes(station), `station "${station}" exists in ship.js`);
 
 const choiceIds = new Set();
