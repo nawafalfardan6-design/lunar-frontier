@@ -1,3 +1,5 @@
+import {briefings, enableTouchStick} from './presentation.js';
+import {saveMission, loadMission, forecast, resourceHistory} from './mission-session.js';
 import * as T from "./vendor/three.module.js";
 import { createXR, astronautGlove } from './xr.js';
 const canvas = document.getElementById("world"),
@@ -11,12 +13,13 @@ let state = initial(),
   velocity = 0,
   near = false;
 const keys = new Set(),
-  player = new T.Vector3(0, 1.8, 13),
+  player = new T.Vector3(0, 1.8, 2),
   obstacles = [];
 let inMenu = true;
 let missionStarted = false;
 const preferences = {
   quality: "high",
+  moonSpin: true,
   sensitivity: 1,
   reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
 };
@@ -24,6 +27,7 @@ try {
   const saved = JSON.parse(
     localStorage.getItem("lunar-frontier-settings") || "{}",
   );
+  if (typeof saved.moonSpin === "boolean") preferences.moonSpin = saved.moonSpin;
   if (["low", "high"].includes(saved.quality))
     preferences.quality = saved.quality;
   if (Number.isFinite(saved.sensitivity))
@@ -49,8 +53,8 @@ renderer.shadowMap.type = T.PCFSoftShadowMap;
 renderer.toneMapping = T.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 const scene = new T.Scene();
-scene.background = new T.Color(0x201c38);
-scene.fog = new T.FogExp2(0x514366, 0.0025);
+scene.background = new T.Color(0x090e1b);
+scene.fog = new T.FogExp2(0x3f455c, 0.0015);
 const camera = new T.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 650);
 const menuScene = new T.Scene();
 menuScene.background = new T.Color(0x201c38);
@@ -205,7 +209,7 @@ terrain.computeVertexNormals();
 const ground = terrain.toNonIndexed();
 const groundColors = [];
 for (let i = 0; i < ground.attributes.position.count; i += 3) {
-  const shade = new T.Color().setHSL(0.72, 0.1, 0.42 + random() * 0.075);
+  const shade = new T.Color().setHSL(0.72, 0.1, 0.43 + random() * 0.012);
   for (let vertex = 0; vertex < 3; vertex++)
     groundColors.push(shade.r, shade.g, shade.b);
 }
@@ -311,6 +315,17 @@ function habitat(x, z, name, color, plants = false) {
   for (const dx of [-1.15, 1.15])
     box(0.12, 3.3, 0.4, color, x + dx, 2, z + 4.6);
   sign(name, x, 5.9, z + 4.5);
+  // Pressure-hatch trim, wall ribs and service tanks give the habitat scale.
+  const hatch = mesh(new T.TorusGeometry(1.2, 0.14, 8, 16), mat(0x788995), x, 2.3, z+4.7);
+  hatch.scale.y=1.35;
+  box(0.08,2.8,0.08,0x8faaa9,x,2.2,z+4.8);
+  box(0.5,0.12,0.12,0xe4b474,x+0.35,2.1,z+4.9);
+  for(const offset of [-5,-2,2,5]) box(0.13,4.3,0.18,0x8e9ba3,x+offset,2.7,z+4.35);
+  for(const offset of [-4.5,4.5]) {
+    const tank=mesh(new T.CylinderGeometry(0.55,0.55,2.6,16),mat(0xbac7c9),x+offset,1.7,z+5.3);
+    mesh(new T.TorusGeometry(0.56,0.07,6,16),mat(color),x+offset,1.2,z+5.3).rotation.x=Math.PI/2;
+    mesh(new T.TorusGeometry(0.56,0.07,6,16),mat(color),x+offset,2.1,z+5.3).rotation.x=Math.PI/2;
+  }
   if (plants) {
     for (let i = -2; i <= 2; i++) {
       box(0.8, 0.6, 0.8, 0x476d59, x + i * 1.7, 5.7, z);
@@ -331,6 +346,14 @@ habitat(0, -12, "LIFE SUPPORT", 0x8edac8);
 habitat(-22, -8, "CREW SHELTER", 0xf3c477);
 habitat(22, -10, "GREENHOUSE", 0xa8d079, true);
 habitat(0, 32, "MISSION CONTROL", 0x9bb8e8);
+// A low protective berm makes the shelter visually distinct.
+for(let i=0;i<7;i++) {
+  const rock=mesh(new T.DodecahedronGeometry(1.6,0),mat(0x747685),-27+i*1.65,1,-13.3);
+  rock.scale.set(1,0.8,1.2);
+}
+// Greenhouse glazing and plant beds occupy the protected roof enclosure.
+const greenhouseGlass=mesh(new T.SphereGeometry(5.2,20,10,0,Math.PI*2,0,Math.PI/2),new T.MeshPhysicalMaterial({color:0x91d8c5,transparent:true,opacity:0.28,roughness:0.2,depthWrite:false}),22,5.35,-10);
+greenhouseGlass.scale.set(1,0.62,0.8);
 for (let i = 0; i < 4; i++) {
   const x = -26 + (i % 2) * 8,
     z = 17 + Math.floor(i / 2) * 8;
@@ -486,9 +509,14 @@ function titleScreen() {
   keys.clear();
   dialog.close();
   document.body.classList.add("title-screen");
-  entry.innerHTML = `<div class="entry-panel"><span class="entry-eyebrow">A LITTLE OUTPOST. A BIG ADVENTURE.</span><h1>LUNAR<br><span>FRONTIER</span></h1><p class="entry-tagline">Your mission. Your crew.<br>Your decisions.</p><nav aria-label="Main menu"><button id="start-game">${missionStarted ? "CONTINUE EXPEDITION" : "START EXPEDITION"} <span>↗</span></button><button id="settings">SETTINGS <span>⚙</span></button><button id="how-to">HOW TO PLAY <span>?</span></button></nav><p class="menu-note">4 astronauts · 7 days · One small step at a time</p></div><div class="moon-caption">THE MOON<span>YOUR NEXT FRONTIER</span></div><div class="entry-footer">LUNAR FRONTIER <span>A SPACE EXPLORATION GAME</span></div>`;
-  document.getElementById("start-game").onclick = resume;
+  entry.innerHTML = `<div class="entry-panel"><span class="entry-eyebrow">A LITTLE OUTPOST. A BIG ADVENTURE.</span><h1>LUNAR<br><span>FRONTIER</span></h1><p class="entry-tagline">Your mission. Your crew.<br>Your decisions.</p><nav aria-label="Main menu"><button id="start-game">${missionStarted ? "CONTINUE EXPEDITION" : "START EXPEDITION"} <span>↗</span></button><button id="settings">SETTINGS <span>⚙</span></button><button id="how-to">HOW TO PLAY <span>?</span></button></nav><p class="menu-note">4 astronauts · 7 days · One small step at a time</p></div><div class="moon-caption">THE MOON<span>YOUR NEXT FRONTIER</span><button id="moon-spin">${preferences.moonSpin ? "Pause rotation" : "Rotate Moon"}</button></div><div class="entry-footer">LUNAR FRONTIER <span>A SPACE EXPLORATION GAME</span></div>`;
+  document.getElementById("start-game").onclick = () => {
+    if (missionStarted) { resume(); return; }
+    show('<span class="kicker">MISSION BRIEFING</span><h2>Seven days. Four explorers.</h2><p>Keep air, water and protection ready for your crew. Your battery supplies every system. Plan your reserve before choosing extra work.</p><p>Collect and transmit research. Tend the established greenhouse crop and reach harvest. Packaged meals already cover the crew’s needs.</p><p>Days 1–2 prepare the outpost. Days 3–5 test your preparations. Days 6–7 bring your work home.</p><button id="launch">Begin day 1</button>');
+    document.getElementById('launch').onclick=resume;
+  };
   document.getElementById("settings").onclick = settingsMenu;
+  document.getElementById("moon-spin").onclick = event => { preferences.moonSpin = !preferences.moonSpin; event.target.textContent = preferences.moonSpin ? "Pause rotation" : "Rotate Moon"; applyPreferences(); };
   document.getElementById("how-to").onclick = () => {
     show(
       '<span class="kicker">FIELD GUIDE</span><h2>Welcome, Commander.</h2><p>Walk to the amber marker and interact with its terminal. Each decision advances your seven-day mission and changes power, life support or crew safety.</p><p><b>WASD / arrows</b> — walk<br><b>Drag the mouse</b> — look<br><b>E</b> — use a terminal<br><b>Space</b> — jump<br><b>Shift</b> — walk faster<br><b>Escape</b> — pause</p><p>On touch screens, use the movement buttons and drag the world. Keep the crew safe, transmit research and help the crop experiment reach harvest.</p><button id="menu-back">Back to menu</button>',
@@ -498,7 +526,7 @@ function titleScreen() {
 }
 function settingsMenu() {
   show(
-    `<span class="kicker">MAKE YOURSELF AT HOME</span><h2>Settings</h2><div class="setting"><label for="quality">Graphics quality</label><select id="quality"><option value="high">High · shadows enabled</option><option value="low">Low · smoother performance</option></select></div><div class="setting"><label for="sensitivity">Look sensitivity <output id="sensitivity-value">${preferences.sensitivity.toFixed(1)}×</output></label><input id="sensitivity" type="range" min="0.4" max="2" step="0.1" value="${preferences.sensitivity}"></div><div class="setting check"><label for="motion">Reduce motion</label><input id="motion" type="checkbox" ${preferences.reducedMotion ? "checked" : ""}></div><p>Reduced motion stops the Moon rotation and decorative animations. Settings save on this device.</p><button id="settings-done">Done</button>`,
+    `<span class="kicker">MAKE YOURSELF AT HOME</span><h2>Settings</h2><div class="setting"><label for="quality">Graphics quality</label><select id="quality"><option value="high">High · shadows enabled</option><option value="low">Low · smoother performance</option></select></div><div class="setting"><label for="sensitivity">Look sensitivity <output id="sensitivity-value">${preferences.sensitivity.toFixed(1)}×</output></label><input id="sensitivity" type="range" min="0.4" max="2" step="0.1" value="${preferences.sensitivity}"></div><div class="setting check"><label for="motion">Reduce motion</label><input id="motion" type="checkbox" ${preferences.reducedMotion ? "checked" : ""}></div><p>Reduced motion stops decorative animations during the mission. Moon rotation has its own control on the title screen. Settings save on this device.</p><button id="settings-done">Done</button>`,
   );
   document.getElementById("quality").value = preferences.quality;
   document.getElementById("quality").onchange = (e) => {
@@ -519,38 +547,41 @@ function settingsMenu() {
 }
 function report() {
   show(
-    `<span class="kicker">MISSION REPORT</span><h1>${outcome(state)}</h1><p>${state.day < 7 ? "A critical system reached zero. Mission control ended the expedition early." : "You completed seven days on the lunar surface."}</p><p>Research transmitted ${state.flags.includes("sent") ? "✓" : "—"} · Crop harvested ${state.flags.includes("food") ? "✓" : "—"}</p>${state.log.map((l) => `<details><summary>Day ${l.day} · ${l.choice}</summary><p>${l.notes.join(" ")}</p></details>`).join("")}<button id="replay">New expedition</button><button class="secondary" id="explore">Keep exploring</button>`,
+    `<span class="kicker">MISSION REPORT</span><h1>${outcome(state)}</h1><p>${state.day < 7 ? "A critical system reached zero. Mission control ended the expedition early." : "You completed seven days on the lunar surface."}</p><p>Research transmitted ${state.flags.includes("sent") ? "✓" : "—"} · Crop harvested ${state.flags.includes("food") ? "✓" : "—"}</p>${resourceHistory(state)}${state.log.map((l) => `<details><summary>Day ${l.day} · ${l.choice}</summary><p>${l.notes.join(" ")}</p></details>`).join("")}<button id="replay">New expedition</button><button class="secondary" id="explore">Keep exploring</button>`,
   );
   document.getElementById("replay").onclick = () => {
     state = initial();
-    player.set(0, 1.8, 13);
+    saveMission(state);
+    player.set(0, 1.8, 2);
     yaw = pitch = jumpY = velocity = 0;
     hud();
     resume();
   };
   document.getElementById("explore").onclick = resume;
 }
-function interact() {
+function interact(direct = false) {
   if (dialog.open || !playing) return;
   gloveReach = 1;
   if (state.ended) {
     report();
     return;
   }
-  if (!near) return;
+  if (!near && !direct) return;
   const day = days[state.day];
+  const briefing = briefings[state.day];
   show(
-    `<span class="kicker">DAY ${state.day + 1} / ${stations[state.day].name.toUpperCase()}</span><h2>${day.title}</h2><p>${day.story}</p><div class="choices">${day.choices.map((c, i) => `<button class="choice" data-choice="${i}">${c[0]}<span>${c[1]}</span></button>`).join("")}</div><p>Daily essentials use 12 power. Charging restores 14 after Days 1–6. Below 15 power, essential systems struggle.</p><button class="secondary" id="back">Back to exploring</button>`,
+    `<span class="kicker">DAY ${state.day + 1} / ${stations[state.day].name.toUpperCase()}</span><p class="speaker">${briefing.speaker}</p><h2>${briefing.title}</h2><p>${briefing.text}</p><div class="choices">${day.choices.map((c, i) => `<button class="choice" data-choice="${i}">${c[0]}<span>${c[1]}</span><span>${forecast(state,i,decide)}</span></button>`).join("")}</div><p>Daily essentials use 12 power. Charging restores 14 after Days 1–6. Below 15 power, essential systems struggle.</p><button class="secondary" id="back">Back to exploring</button>`,
   );
   document.getElementById("back").onclick = resume;
   modal.querySelectorAll("[data-choice]").forEach(
     (button) =>
       (button.onclick = () => {
         state = decide(state, Number(button.dataset.choice));
+        const saved = saveMission(state);
         hud();
         const last = state.log.at(-1);
         show(
-          `<span class="kicker">DAY ${last.day} COMPLETE</span><h2>${last.choice}</h2><ul>${last.notes.map((n) => `<li>${n}</li>`).join("")}</ul><aside><h3>Why this matters in real life</h3><p>${last.why}</p></aside><button id="continue">${state.ended ? "View report" : "Explore day " + (state.day + 1)} →</button>`,
+          `<span class="kicker">DAY ${last.day} COMPLETE</span><h2>${last.choice}</h2>${saved ? "" : "<p>Your browser could not save progress. Keep this tab open to continue.</p>"}<ul>${last.notes.map((n) => `<li>${n}</li>`).join("")}</ul><aside><h3>Why this matters in real life</h3><p>${last.why}</p></aside><button id="continue">${state.ended ? "View report" : "Explore day " + (state.day + 1)} →</button>`,
         );
         document.getElementById("continue").onclick = state.ended
           ? report
@@ -558,7 +589,12 @@ function interact() {
       }),
   );
 }
-document.getElementById("interact").onclick = interact;
+document.getElementById("interact").onclick = () => interact();
+const stationAccess=document.createElement('button');
+stationAccess.id='station-access';
+stationAccess.textContent='Mission console';
+stationAccess.onclick=()=>interact(true);
+document.body.append(stationAccess);
 document.getElementById("help").onclick = () => {
   show(
     '<h2>Explore the outpost</h2><p>WASD or arrow keys move. Drag the mouse to look. E interacts near the amber marker. Space jumps. Shift moves faster. Escape pauses. Touch screens have movement buttons.</p><h3>Mission science</h3><p>Each turn represents one Earth day. Resource points, events and solar charging are simplified game rules. This is an illustrative outpost. Packaged meals sustain the crew while an existing crop experiment grows.</p><p><a href="https://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=LRO-L-DLRE-5-GCP-V1.0" target="_blank" rel="noopener">NASA Diviner</a> · <a href="https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/" target="_blank" rel="noopener">Life support</a> · <a href="https://www.nasa.gov/reference/crew-systems/" target="_blank" rel="noopener">Crew protection</a> · <a href="https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/" target="_blank" rel="noopener">Growing food</a></p><p>NASA science explanations are included. Numerical NASA measurements are still pending integration.</p><button id="return">Return to surface</button>',
@@ -621,6 +657,9 @@ let drag = null;
 canvas.addEventListener("pointerdown", (e) => {
   if (dialog.open || inMenu) return;
   playing = true;
+  if (e.pointerType === 'mouse' && canvas.requestPointerLock) {
+    canvas.requestPointerLock()?.catch?.(()=>{});
+  }
   drag = { x: e.clientX, y: e.clientY };
   canvas.setPointerCapture(e.pointerId);
 });
@@ -643,6 +682,7 @@ document.querySelectorAll("[data-key]").forEach((b) => {
   for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
     b.addEventListener(type, () => keys.delete(b.dataset.key));
 });
+enableTouchStick(keys);
 function clearAt(x, z) {
   return (
     Math.abs(x) < 55 &&
@@ -707,7 +747,7 @@ function frame(time) {
   glove.position.set(0.30 - gloveReach * 0.12, -0.32 + gloveReach * 0.08, -0.52 - gloveReach * 0.17);
   glove.rotation.x = -0.28 - gloveReach * 0.6;
   if (inMenu) {
-    if (!preferences.reducedMotion) menuMoon.rotation.y += dt * 0.045;
+    if (preferences.moonSpin) menuMoon.rotation.y += dt * 0.14;
     renderer.render(menuScene, menuCamera);
     return;
   }
@@ -755,7 +795,7 @@ function frame(time) {
           ? "To your right"
           : "To your left";
   document.getElementById("objective").innerHTML =
-    `<span class="kicker">CURRENT OBJECTIVE</span><h2>${state.ended ? "Mission complete" : days[state.day].title}</h2><p>${state.ended ? "Explore freely. Interact to review your mission." : `${s.name} · ${Math.round(distance)} m · ${direction}. Follow the amber marker.`}</p>`;
+    `<span class="kicker">${state.day < 2 ? "PREPARE THE OUTPOST" : state.day < 5 ? "KEEP THE CREW SAFE" : "BRING OUR WORK HOME"}</span><h2>${state.ended ? "Mission complete" : briefings[state.day].title}</h2><p>${state.ended ? "Open your mission report." : `Go to ${s.name} · ${Math.round(distance)} m · ${direction}`}</p><p class="objective-hint">${near ? "Press E or Interact to decide." : "Walk to the amber beacon or open Mission console."}</p>`;
   document.getElementById("prompt").textContent = state.ended
     ? "Mission complete · E to view report"
     : near
@@ -764,6 +804,8 @@ function frame(time) {
   document.getElementById("interact").disabled = !state.ended && !near;
   renderer.render(scene, camera);
 }
+const restored=loadMission(initial,decide);
+if(restored){state=restored;missionStarted=true;}
 hud();
 applyPreferences();
 titleScreen();

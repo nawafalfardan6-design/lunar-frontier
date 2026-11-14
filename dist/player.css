@@ -1,0 +1,17 @@
+header b{font-size:18px;text-shadow:none;transform:none}header small{font-size:8px}
+#hud{transform:none;width:215px;background:#f1ead9f2;border-radius:10px;box-shadow:0 8px 24px #0003}
+#objective{transform:none;border:1px solid #a5bfcb66;border-radius:12px;background:#152536ec;width:310px;padding:22px;box-shadow:0 8px 24px #0003}
+#objective h2{font-family:Barlow,Arial;font-size:26px;line-height:1.1;letter-spacing:0}
+#objective p{font-family:Barlow,Arial;font-size:16px;line-height:1.45}
+#objective .objective-hint{font-size:13px;color:#c7d8dd;border-top:1px solid #ffffff20;padding-top:12px}
+button{border-radius:7px;box-shadow:0 3px 0 #171c2b;font-family:Barlow,Arial;font-size:15px}
+dialog{border-radius:16px;border:1px solid #8d9d9e;box-shadow:0 25px 90px #0006}
+dialog h2{font-family:Barlow,Arial;font-size:32px;letter-spacing:-.5px}
+dialog p,dialog li{font-size:18px}.speaker{font-size:14px!important;color:#436d69!important;font-weight:bold}
+dialog .choice{font-family:Barlow,Arial;font-size:19px;border-radius:9px;background:#dde9dc;padding:20px}
+dialog .choice span{font-size:16px}.choice span:last-child{font-weight:600}
+#joystick{width:125px;height:125px;background:#15253699;border:2px solid #e5e8d777;border-radius:50%;position:relative;touch-action:none;pointer-events:auto}
+#stick{position:absolute;width:54px;height:54px;left:34px;top:34px;border-radius:50%;background:#e4eee4cc;border:2px solid #172c3a;pointer-events:none}
+#joystick small{position:absolute;bottom:-22px;width:100%;left:0;margin:0;font-size:10px;pointer-events:none}
+@media(max-width:700px){#hud{top:72px;left:12px;width:calc(100% - 24px);padding:10px 14px;display:flex;gap:14px;align-items:center}#hud .kicker{margin:0;background:none;color:#263342;width:55px;font-size:8px;padding:0}.meter{flex:1;margin:0;font-size:9px}.meter b{display:block;float:none;margin-top:3px}progress{height:8px}#objective{top:166px;left:12px;right:12px;width:auto;padding:12px 16px}#objective h2{font-size:21px;margin:6px 0}#objective p{font-size:13px;margin:3px 0}#objective .objective-hint{display:none}header{top:14px}header b{font-size:13px}#station-access{bottom:182px;left:15px;padding:10px 15px}#prompt{bottom:240px;font-size:12px;max-width:85%;width:max-content}dialog p{font-size:17px}dialog .choice{font-size:18px}footer #interact{padding:17px}#touch{bottom:42px}#touch #jump{margin-bottom:3px}}
+@media(max-height:520px) and (pointer:coarse){#hud{top:62px;width:230px;display:block}#hud .kicker{width:auto}.meter{margin-top:6px}.meter b{float:right;margin:0}#objective{left:auto;right:12px;top:62px;width:240px}#station-access{left:260px;bottom:22px}#touch{bottom:22px}#prompt{bottom:115px}}
