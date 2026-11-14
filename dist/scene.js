@@ -9,7 +9,7 @@ import { surfaceTexture } from "./surfaces.js";
 import { buildShip } from "./ship.js";
 import { createGuidance } from "./navigation.js";
 import { astronautGlove } from "./xr.js";
-import { buildMenuScene, buildTerrain, buildSky } from "./landscape.js";
+import { buildMenuScene, buildTerrain, buildSky, SUN_DIRECTION } from "./landscape.js";
 
 function createRenderer(canvas, dialog, modal) {
   let renderer;
@@ -32,7 +32,7 @@ function createRenderer(canvas, dialog, modal) {
 function addSunlight(scene) {
   scene.add(new T.HemisphereLight(0xdde6ef, 0x272b30, 1.2));
   const sun = new T.DirectionalLight(0xffffff, 2.4);
-  sun.position.set(17, 10, -41);
+  sun.position.copy(SUN_DIRECTION).multiplyScalar(50);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -65, right: 65, top: 65, bottom: -65, far: 160 });
@@ -180,16 +180,19 @@ function createGloves(camera) {
 export function createScene({ canvas, dialog, modal, obstacles, clearAt }) {
   const renderer = createRenderer(canvas, dialog, modal);
   const scene = new T.Scene();
-  scene.background = new T.Color(0x010204);
-  // No atmospheric haze on the Moon.
+  // Black sky even in daytime: the Moon has no air to scatter sunlight.
+  scene.background = new T.Color(0x000000);
   const camera = new T.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 650);
-  const { menuScene, menuCamera, menuMoon } = buildMenuScene();
+  const menu = buildMenuScene();
+  const { menuScene, menuCamera, menuMoon } = menu;
   camera.rotation.order = "YXZ";
   addSunlight(scene);
   const helpers = createHelpers(scene, obstacles);
   const { mesh, box, mat, obstacle } = helpers;
-  buildTerrain(mesh);
-  const { sky, earth } = buildSky(scene, menuScene, mesh);
+  buildTerrain(scene);
+  const backdrop = buildSky(scene);
+  const { sky, earth } = backdrop;
+  const starMaterials = [...menu.starMaterials, ...backdrop.starMaterials];
   const skyAnchor = new T.Vector3();
   const animateShip = buildShip(scene, box, mesh, mat, obstacle);
   const crew = [
@@ -209,6 +212,8 @@ export function createScene({ canvas, dialog, modal, obstacles, clearAt }) {
     menuCamera.updateProjectionMatrix();
     menuMoon.position.set(innerWidth < 700 ? 0.9 : 3.2, innerWidth < 700 ? 1.6 : 0, 0);
     menuMoon.scale.setScalar(innerWidth < 700 ? 0.75 : 1);
+    for (const material of starMaterials)
+      material.uniforms.pixelRatio.value = renderer.getPixelRatio();
   }
 
   return {
