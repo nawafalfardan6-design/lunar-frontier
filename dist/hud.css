@@ -1,4 +1,4 @@
-/* hud.css: the mission HUD and the mission dialogs (hud.js and mission-panels.js).
+/* hud.css: the mission HUD and the mission dialogs (hud.js, mission-panels.js, tasks.js).
    Loaded last, so it overrides the older #hud and #objective rules in world.css,
    indie.css, player.css and flight.css. Same look: dark translucent panels and
    uppercase monospace kicker labels, with bigger text for young players. */
@@ -982,6 +982,77 @@ dialog .lf-goals .lf-starlist {
   margin: 14px 0;
 }
 
+/* ------------------------------------------------------------------ */
+/* Hands-on mini-games (tasks.js)                                      */
+/* ------------------------------------------------------------------ */
+dialog .task-line {
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  font: 700 19px/1.4 var(--lf-sans);
+  color: #ffe6b0;
+  background: #ffffff0a;
+  border-left: 3px solid var(--lf-accent);
+}
+dialog #task-feedback {
+  min-height: 26px;
+  text-align: center;
+  font: 700 17px var(--lf-sans);
+  color: #dfe9ef;
+}
+.tuner {
+  font: 16px var(--lf-sans);
+  color: #d5e2ea;
+}
+.tuner b {
+  font-size: 19px;
+  color: #ffe6b0;
+}
+/* Slider with a green target band. --t is the target and --b the tolerance (0 to 1).
+   The band is placed where the 28px thumb's centre sits for those values. */
+.tuner input {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 36px;
+  margin: 14px 0;
+  background:
+    linear-gradient(
+        90deg,
+        transparent calc(14px + (100% - 28px) * (var(--t) - var(--b))),
+        #5fcf8d calc(14px + (100% - 28px) * (var(--t) - var(--b))),
+        #5fcf8d calc(14px + (100% - 28px) * (var(--t) + var(--b))),
+        transparent calc(14px + (100% - 28px) * (var(--t) + var(--b)))
+      )
+      center / 100% 16px no-repeat,
+    linear-gradient(#ffffff26, #ffffff26) center / 100% 10px no-repeat;
+  border-radius: 8px;
+}
+.tuner input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #111922;
+  border-radius: 50%;
+  background: #ffe6b0;
+  box-shadow: 0 2px 6px #000a;
+}
+.tuner input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #111922;
+  border-radius: 50%;
+  background: #ffe6b0;
+}
+#apparatus.ready .tuner output {
+  color: #bff3cf;
+  border-color: #5fcf8d;
+}
+#apparatus .valve span {
+  font-weight: 700;
+}
+#finish-task:not(:disabled) {
+  box-shadow: 0 0 0 3px #9bc8c155;
+}
+
 /* Phones: one column, slightly smaller type. */
 @media (max-width: 700px) {
   dialog:has(.lf-wide) {
@@ -1017,5 +1088,9 @@ dialog .lf-goals .lf-starlist {
   }
   dialog .lf-report h1 {
     font-size: 30px;
+  }
+  #apparatus .lock {
+    min-width: 62px;
+    padding: 10px 8px;
   }
 }

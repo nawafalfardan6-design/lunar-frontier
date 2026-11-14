@@ -207,7 +207,9 @@ export function createHud(ctx) {
         if (ctx.state !== state) return; // already chosen (double click)
         const index = Number(button.dataset.choice);
         const finish = () => applyChoice(state, index);
-        startTask(state.day, index, days[state.day].choices[index].label, show, finish, chooseJob);
+        // VR has no sliders, so the mini-game is skipped there.
+        if (ctx.stage.renderer.xr.isPresenting) finish();
+        else startTask(days[state.day].choices[index], state.day + 1, show, finish, chooseJob);
       };
     });
   }
