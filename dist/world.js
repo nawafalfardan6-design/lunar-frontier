@@ -1,3 +1,4 @@
+import {opening, companionReaction, createCompanion} from './companion.js';
 import {briefings, enableTouchStick} from './presentation.js';
 import {saveMission, loadMission, forecast, resourceHistory} from './mission-session.js';
 import * as T from "./vendor/three.module.js";
@@ -509,10 +510,10 @@ function titleScreen() {
   keys.clear();
   dialog.close();
   document.body.classList.add("title-screen");
-  entry.innerHTML = `<div class="entry-panel"><span class="entry-eyebrow">A LITTLE OUTPOST. A BIG ADVENTURE.</span><h1>LUNAR<br><span>FRONTIER</span></h1><p class="entry-tagline">Your mission. Your crew.<br>Your decisions.</p><nav aria-label="Main menu"><button id="start-game">${missionStarted ? "CONTINUE EXPEDITION" : "START EXPEDITION"} <span>↗</span></button><button id="settings">SETTINGS <span>⚙</span></button><button id="how-to">HOW TO PLAY <span>?</span></button></nav><p class="menu-note">4 astronauts · 7 days · One small step at a time</p></div><div class="moon-caption">THE MOON<span>YOUR NEXT FRONTIER</span><button id="moon-spin">${preferences.moonSpin ? "Pause rotation" : "Rotate Moon"}</button></div><div class="entry-footer">LUNAR FRONTIER <span>A SPACE EXPLORATION GAME</span></div>`;
+  entry.innerHTML = `<div class="entry-panel"><span class="entry-eyebrow">A LITTLE OUTPOST. A BIG ADVENTURE.</span><h1>LUNAR<br><span>FRONTIER</span></h1><p class="entry-tagline">A delayed supply ship. Four explorers.<br>Seven days to bring them home.</p><nav aria-label="Main menu"><button id="start-game">${missionStarted ? "CONTINUE EXPEDITION" : "START EXPEDITION"} <span>↗</span></button><button id="settings">SETTINGS <span>⚙</span></button><button id="how-to">HOW TO PLAY <span>?</span></button></nav><p class="menu-note">4 astronauts · 7 days · One small step at a time</p></div><div class="moon-caption">THE MOON<span>YOUR NEXT FRONTIER</span><button id="moon-spin">${preferences.moonSpin ? "Pause rotation" : "Rotate Moon"}</button></div><div class="entry-footer">LUNAR FRONTIER <span>A SPACE EXPLORATION GAME</span></div>`;
   document.getElementById("start-game").onclick = () => {
     if (missionStarted) { resume(); return; }
-    show('<span class="kicker">MISSION BRIEFING</span><h2>Seven days. Four explorers.</h2><p>Keep air, water and protection ready for your crew. Your battery supplies every system. Plan your reserve before choosing extra work.</p><p>Collect and transmit research. Tend the established greenhouse crop and reach harvest. Packaged meals already cover the crew’s needs.</p><p>Days 1–2 prepare the outpost. Days 3–5 test your preparations. Days 6–7 bring your work home.</p><button id="launch">Begin day 1</button>');
+    show(opening);
     document.getElementById('launch').onclick=resume;
   };
   document.getElementById("settings").onclick = settingsMenu;
@@ -581,7 +582,7 @@ function interact(direct = false) {
         hud();
         const last = state.log.at(-1);
         show(
-          `<span class="kicker">DAY ${last.day} COMPLETE</span><h2>${last.choice}</h2>${saved ? "" : "<p>Your browser could not save progress. Keep this tab open to continue.</p>"}<ul>${last.notes.map((n) => `<li>${n}</li>`).join("")}</ul><aside><h3>Why this matters in real life</h3><p>${last.why}</p></aside><button id="continue">${state.ended ? "View report" : "Explore day " + (state.day + 1)} →</button>`,
+          `<span class="kicker">DAY ${last.day} COMPLETE</span><h2>${last.choice}</h2><div class="nora-response"><strong>NORA � CREW CHANNEL</strong><p>${companionReaction(state)}</p></div>${saved ? "" : "<p>Your browser could not save progress. Keep this tab open to continue.</p>"}<ul>${last.notes.map((n) => `<li>${n}</li>`).join("")}</ul><aside><h3>Why this matters in real life</h3><p>${last.why}</p></aside><button id="continue">${state.ended ? "View report" : "Explore day " + (state.day + 1)} →</button>`,
         );
         document.getElementById("continue").onclick = state.ended
           ? report
@@ -804,6 +805,7 @@ function frame(time) {
   document.getElementById("interact").disabled = !state.ended && !near;
   renderer.render(scene, camera);
 }
+createCompanion(()=>state,show,resume);
 const restored=loadMission(initial,decide);
 if(restored){state=restored;missionStarted=true;}
 hud();
