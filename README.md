@@ -1,36 +1,72 @@
 # Lunar Frontier
 
-Lunar Frontier is a first-person browser survival game aboard Selene, a spacecraft landed on the Moon. Explore six compartments, complete interactive system repairs, and manage power, life support, and crew safety over seven days.
+A browser game for ages 7–12 built for the NASA Space Apps
+[Junior Astronaut Mission Trainer](https://www.spaceappschallenge.org/2026/challenges/junior-astronaut-mission-trainer/)
+challenge. You command **Selene**, a spacecraft landed on the Moon with four crew, for
+seven days. Each day you walk to a station, make one engineering decision, and see
+what it does to the ship.
 
-## Run locally
+**Play it:** https://nawafalfardan6-design.github.io/lunar-frontier/
+(a simpler 2D version is at `/mission.html`)
 
-From the repository folder, run `python -m http.server 8765 --directory dist`, then open [http://localhost:8765](http://localhost:8765). The game uses WebGL 2. A simpler dashboard is available at `/mission.html`.
+## How the mission works
 
-Use **WASD** or arrow keys to walk, drag to look, **E** to use a nearby terminal, **Space** to jump, and **Esc** to pause. Touch screens provide on-screen controls.
+- **Four meters:**
+  - ⚡ **Battery**: everything needs power.
+  - 💨 **Air & Water**: life support.
+  - 🛡️ **Crew Safety**: protection from radiation and accidents.
+  - 🔬 **Science**: the research you collect.
+- **Daily budget.** The ship uses power every day. Solar panels recharge it while the
+  Sun is up. **The Sun sets on Day 6**, and after that the heaters need extra power,
+  so you have to plan your battery.
+- **No hidden surprises.** Risky choices create a ⚠ warning that says what will
+  happen and how to fix it. Mission Control warns about the solar storm in advance.
+- **Stars instead of one right answer:**
+  - Research reached Earth
+  - Fresh harvest
+  - Battery reserve for the night
+  - Healthy crew
 
-## Work on the game
+  Keep the crew safe and earn at least two stars for **Mission success**. About half
+  of all possible choice paths succeed, so there are many ways to win, but careless
+  play doesn't.
+- Every day ends with a short science explanation and a link to a NASA source.
+  Resource numbers are simplified for play.
 
-Edit the files in `dist/` directly. The project has no build step.
+## Controls
 
-- `dist/index.html`, `dist/world.css`, and `dist/indie.css` define the main interface and layout.
-- `dist/world.js` is the 3D game's entry point: shared state, module wiring and the frame loop.
-- `dist/scene.js` and `dist/landscape.js` build the 3D world (renderer, lights, materials, terrain, sky).
-- `dist/controls.js` handles keyboard, mouse and touch look, movement physics and collision.
-- `dist/hud.js` handles the HUD text, dialogs, menus and settings.
-- `dist/engine.js` defines the seven mission days, choices, and consequences.
-- `dist/vendor/` contains Three.js and its license.
+| Action | Keyboard and mouse | Touch |
+| --- | --- | --- |
+| Move | WASD or arrow keys (Shift to run) | Joystick |
+| Look | Click, then move the mouse (Esc to pause) | Drag |
+| Use a terminal | E | Use button |
+| Jump (a slow Moon hop) | Space | Jump button |
 
-Create a branch from `main`, test your changes locally, and open a pull request describing what changed and how you tested it. Coordinate changes to `world.js` or `engine.js` when multiple people are editing them.
+The game also supports the Meta Quest browser (WebXR).
 
-The in-game science cards link to NASA sources. Game resource values and scenario events are simplified for play. This project was built for the [NASA Space Apps Junior Astronaut Mission Trainer challenge](https://www.spaceappschallenge.org/2026/challenges/junior-astronaut-mission-trainer/).
+## Run it locally
 
-## Current source layout
+```bash
+python3 -m http.server 8765 --directory dist
+```
 
-- `dist/ship.js`: ship compartments, equipment and collision layout.
-- `dist/tasks.js`: valve, lock, power-routing, fluid and signal interactions.
-- `dist/surfaces.js`: locally generated metal-panel and lunar surface textures.
-- `dist/flight.css`: current neutral spacecraft interface styling, applied after legacy layout styles.
-- `dist/companion.js`: Nora and optional mission guidance.
-- `dist/xr.js`: experimental WebXR support; real headset verification remains outstanding.
+Then open http://localhost:8765. There is no build step and nothing to install.
+Opening the HTML file directly won't work, because JavaScript modules need a server.
 
-The ZIP includes all project source, bundled Three.js, its license, and hosting configuration. No build or package installation is required. Extract the ZIP before running the local server; opening the HTML directly as a file will not load JavaScript modules correctly. The main game is `dist/index.html`. Procedural surfaces are artistic approximations, not NASA imagery. Legacy CSS filenames are retained for layout compatibility.
+## Working on it
+
+Read **[CONTRIBUTING.md](CONTRIBUTING.md)** first. It covers working from any
+laptop, using Codex with your own account, avoiding conflicts, and how the live site
+updates. AI coding tools read **[AGENTS.md](AGENTS.md)** for the project rules and
+the map of which file owns what.
+
+Check the mission logic with:
+
+```bash
+node tests/engine.test.js
+```
+
+Every push to `main` runs this test and then publishes `dist/` to GitHub Pages.
+
+Three.js r170 is vendored in `dist/vendor/` (MIT license). The procedural textures
+are artistic approximations, not NASA imagery.
