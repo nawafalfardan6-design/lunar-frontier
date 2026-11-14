@@ -1,3 +1,4 @@
+import {surfaceTexture} from './surfaces.js';
 import {startTask} from './tasks.js';
 import {buildShip, shipStations} from './ship.js';
 import {opening, companionReaction, createCompanion} from './companion.js';
@@ -56,11 +57,11 @@ renderer.shadowMap.type = T.PCFSoftShadowMap;
 renderer.toneMapping = T.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 const scene = new T.Scene();
-scene.background = new T.Color(0x090e1b);
-scene.fog = new T.FogExp2(0x3f455c, 0.0015);
+scene.background = new T.Color(0x010204);
+// No atmospheric haze on the Moon.
 const camera = new T.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 650);
 const menuScene = new T.Scene();
-menuScene.background = new T.Color(0x111821);
+menuScene.background = new T.Color(0x05080c);
 const menuCamera = new T.PerspectiveCamera(
   42,
   innerWidth / innerHeight,
@@ -68,11 +69,11 @@ const menuCamera = new T.PerspectiveCamera(
   600,
 );
 menuCamera.position.set(0, 0, 16);
-menuScene.add(new T.AmbientLight(0x9a86bc, 0.7));
-const moonlight = new T.DirectionalLight(0xffdeb4, 3.4);
+menuScene.add(new T.AmbientLight(0xb8c8de, 0.22));
+const moonlight = new T.DirectionalLight(0xffffff, 3.1);
 moonlight.position.set(-4, 5, 8);
 menuScene.add(moonlight);
-const moonGeometry = new T.SphereGeometry(3.6, 96, 64);
+const moonGeometry = new T.SphereGeometry(3.6, 160, 96);
 const moonVertices = moonGeometry.attributes.position;
 const craterCenters = [];
 for (let i = 0; i < 32; i++) {
@@ -95,9 +96,9 @@ for (let i = 0; i < moonVertices.count; i++) {
   let depth = 0;
   for (const crater of craterCenters) {
     const distance = direction.distanceTo(crater.center) / crater.radius;
-    if (distance < 1) depth -= 0.13 * (1 - distance * distance);
+    if (distance < 1) depth -= 0.035 * (1 - distance * distance);
     if (distance >= 0.85 && distance < 1.2)
-      depth += 0.045 * Math.sin(((distance - 0.85) / 0.35) * Math.PI);
+      depth += 0.012 * Math.sin(((distance - 0.85) / 0.35) * Math.PI);
   }
   const variation =
     Math.sin(direction.x * 9 + direction.z * 3) *
@@ -110,27 +111,29 @@ for (let i = 0; i < moonVertices.count; i++) {
     direction.z * (3.6 + depth),
   );
   const color = new T.Color().setHSL(
-    0.09,
-    0.12,
+    0,
+    0,
     0.57 + variation + depth * 0.8,
   );
   moonColors.push(color.r, color.g, color.b);
 }
 moonGeometry.setAttribute("color", new T.Float32BufferAttribute(moonColors, 3));
 moonGeometry.computeVertexNormals();
+const lunarTexture=surfaceTexture("moon");
 const menuMoon = new T.Mesh(
   moonGeometry,
   new T.MeshStandardMaterial({
     vertexColors: true,
+    map:lunarTexture, bumpMap:lunarTexture, bumpScale:0.035,
     roughness: 1,
-    flatShading: true,
+    flatShading: false,
   }),
 );
 menuMoon.position.x = 3.2;
 menuScene.add(menuMoon);
 camera.rotation.order = "YXZ";
-scene.add(new T.HemisphereLight(0xb9b5ed, 0x594c65, 2.1));
-const sun = new T.DirectionalLight(0xffd5a1, 2.6);
+scene.add(new T.HemisphereLight(0xdde6ef, 0x272b30, 1.2));
+const sun = new T.DirectionalLight(0xffffff, 2.4);
 sun.position.set(-35, 45, 18);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -143,6 +146,7 @@ Object.assign(sun.shadow.camera, {
 });
 sun.shadow.bias = -0.001;
 scene.add(sun);
+const panelTexture=surfaceTexture("panel");
 const materials = new Map();
 function mat(color) {
   if (!materials.has(color))
@@ -150,9 +154,10 @@ function mat(color) {
       color,
       new T.MeshStandardMaterial({
         color,
-        roughness: 1,
-        metalness: 0,
-        flatShading: true,
+        map:panelTexture, bumpMap:panelTexture, bumpScale:0.006,
+        roughness: 0.65,
+        metalness: 0.22,
+        flatShading: false,
       }),
     );
   return materials.get(color);
@@ -212,7 +217,7 @@ terrain.computeVertexNormals();
 const ground = terrain.toNonIndexed();
 const groundColors = [];
 for (let i = 0; i < ground.attributes.position.count; i += 3) {
-  const shade = new T.Color().setHSL(0.72, 0.1, 0.43 + random() * 0.012);
+  const shade = new T.Color().setHSL(0, 0, 0.43 + random() * 0.012);
   for (let vertex = 0; vertex < 3; vertex++)
     groundColors.push(shade.r, shade.g, shade.b);
 }
@@ -234,8 +239,8 @@ for (let i = 0; i < 150; i++) {
   if (Math.hypot(x, z) < 45) continue;
   const size = 0.4 + random() * 3;
   const rock = mesh(
-    new T.DodecahedronGeometry(size),
-    mat(0x80728d),
+    new T.IcosahedronGeometry(size, 2),
+    mat(0x777779),
     x,
     size * 0.2,
     z,
@@ -243,15 +248,10 @@ for (let i = 0; i < 150; i++) {
   rock.scale.y = 0.55;
   rock.rotation.set(random(), random() * 6, random());
 }
-for (let i = 0; i < 22; i++) {
-  const a = (i / 22) * Math.PI * 2;
-  mesh(
-    new T.ConeGeometry(25 + random() * 20, 20 + random() * 40, 5),
-    mat(0x796287),
-    Math.sin(a) * 205,
-    0,
-    Math.cos(a) * 205,
-  );
+for(let i=0;i<30;i++) {
+ const a=i/30*Math.PI*2;
+ const hill=mesh(new T.SphereGeometry(1,32,16),mat(0x68686a),Math.sin(a)*210,-8,Math.cos(a)*210);
+ hill.scale.set(32+random()*30,18+random()*22,35+random()*25);
 }
 const stars = new Float32Array(5400);
 for (let i = 0; i < stars.length; i += 3) {
@@ -310,20 +310,20 @@ function astronaut(x, z, color) {
   const g = new T.Group();
   g.position.set(x, 0, z);
   scene.add(g);
-  box(0.7, 0.8, 0.5, 0xe2e7e9, 0, 1.15, 0, g);
+  mesh(new T.CapsuleGeometry(0.32,0.4,8,16),mat(0xe2e7e9),0,1.2,0,g);
   box(0.55, 0.65, 0.4, 0x6c8492, 0, 1.2, -0.4, g);
-  mesh(new T.SphereGeometry(0.4, 16, 12), mat(0xe9e8dc), 0, 1.9, 0, g);
+  mesh(new T.SphereGeometry(0.36, 32, 24), mat(0xe9e8dc), 0, 1.9, 0, g);
   mesh(
-    new T.SphereGeometry(0.32, 16, 12),
-    mat(0x322c24),
+    new T.SphereGeometry(0.30, 32, 24),
+    new T.MeshStandardMaterial({color:0x252a32,metalness:0.8,roughness:0.13}),
     0,
     1.91,
     0.2,
     g,
   ).scale.z = 0.6;
   for (const side of [-1, 1]) {
-    box(0.25, 0.7, 0.28, 0xd8dfe3, side * 0.23, 0.4, 0, g);
-    box(0.23, 0.8, 0.25, 0xd8dfe3, side * 0.53, 1.1, 0, g);
+    mesh(new T.CapsuleGeometry(0.13,0.48,6,12),mat(0xd8dfe3),side*0.2,0.42,0,g);
+    mesh(new T.CapsuleGeometry(0.12,0.5,6,12),mat(0xd8dfe3),side*0.45,1.1,0,g);
   }
   box(0.5, 0.16, 0.53, color, 0, 1.2, 0, g);
   return g;
