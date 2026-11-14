@@ -1,5 +1,5 @@
 // presentation.js: per-day crew briefings (the objective card title comes from here)
-// and the touch-screen movement joystick, which feeds the shared keys set.
+// and the touch-screen movement joystick, an analog {x, y} push read by controls.js.
 
 export const briefings = [
   {
@@ -39,30 +39,29 @@ export const briefings = [
   },
 ];
 
-export function enableTouchStick(keys) {
+// Touch joystick. Writes an analog push into input: x is -1 (left) .. 1 (right),
+// y is -1 (forward) .. 1 (back), and both are 0 when released. controls.js reads it.
+const STICK_REACH = 40; // px from the centre for a full push
+const KNOB_TRAVEL = 35; // px the knob can move from the centre
+
+export function enableTouchStick(input) {
   const pad = document.querySelector("#touch > div");
   pad.innerHTML =
     '<div id="joystick" role="group" aria-label="Movement joystick"><span id="stick"></span><small>MOVE</small></div>';
   const joystick = document.getElementById("joystick");
   const stick = document.getElementById("stick");
-  const directions = ["KeyW", "KeyA", "KeyS", "KeyD"];
   function reset() {
-    directions.forEach((key) => keys.delete(key));
+    input.x = input.y = 0;
     stick.style.transform = "translate(0,0)";
   }
   function move(event) {
     const rect = joystick.getBoundingClientRect();
-    let x = (event.clientX - rect.left - rect.width / 2) / 40;
-    let y = (event.clientY - rect.top - rect.height / 2) / 40;
+    let x = (event.clientX - rect.left - rect.width / 2) / STICK_REACH;
+    let y = (event.clientY - rect.top - rect.height / 2) / STICK_REACH;
     const length = Math.max(1, Math.hypot(x, y));
-    x /= length;
-    y /= length;
-    reset();
-    if (x < -0.2) keys.add("KeyA");
-    if (x > 0.2) keys.add("KeyD");
-    if (y < -0.2) keys.add("KeyW");
-    if (y > 0.2) keys.add("KeyS");
-    stick.style.transform = `translate(${x * 35}px,${y * 35}px)`;
+    input.x = x /= length;
+    input.y = y /= length;
+    stick.style.transform = `translate(${x * KNOB_TRAVEL}px,${y * KNOB_TRAVEL}px)`;
   }
   joystick.onpointerdown = (event) => {
     event.preventDefault();

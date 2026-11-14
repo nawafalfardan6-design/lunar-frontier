@@ -85,6 +85,7 @@ export function createHud(ctx) {
     ctx.missionStarted = true;
     document.body.classList.remove("title-screen");
     ctx.playing = true;
+    ctx.controls.relock(); // mouse: look around again without an extra click
     ctx.stage.guidance.show();
   }
   function applyPreferences() {
