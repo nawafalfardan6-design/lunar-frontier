@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="indie.css" />
     <link rel="stylesheet" href="player.css" />
     <link rel="stylesheet" href="flight.css" />
+    <link rel="stylesheet" href="hud.css" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -15,14 +16,18 @@
       <b>◐ LUNAR FRONTIER<small>LANDED / SELENE</small></b>
       <button id="help">Controls & science</button>
     </header>
-    <!-- Filled by hud.js: resource meters, current objective, interact prompt. -->
-    <section id="hud"></section>
-    <section id="objective"></section>
+    <!-- Filled by hud.js: day, meters and stars; today's job and warnings; interact prompt. -->
+    <section id="hud" aria-label="Ship status"></section>
+    <section id="objective" aria-label="Today's job"></section>
     <div id="crosshair">+</div>
     <div id="prompt"></div>
+    <!-- Same controls text as the in-game help (CONTROLS_TEXT in mission-panels.js). -->
     <footer>
-      WASD move · Click scene to look · E interact · Esc pause
-      <button id="interact">Interact</button>
+      <span id="controls-help"
+        >WASD / arrows move · Shift runs · Click and move the mouse to look (Esc to pause) · E uses
+        a terminal · Space jumps</span
+      >
+      <button id="interact">Use terminal</button>
     </footer>
     <!-- Touch controls. presentation.js replaces the first div with a joystick. -->
     <div id="touch">

@@ -1,43 +1,5 @@
-// presentation.js: per-day crew briefings (the objective card title comes from here)
-// and the touch-screen movement joystick, an analog {x, y} push read by controls.js.
-
-export const briefings = [
-  {
-    speaker: "Maya · habitat engineer",
-    title: "First, make the air safe.",
-    text: "Our lander Selene has touched down on the Moon. The air filter is wearing out. I can fix it today, or help Leo start collecting research. What comes first?",
-  },
-  {
-    speaker: "Sam · mission specialist",
-    title: "Prepare before trouble arrives.",
-    text: "We have one free work period. The shelter needs supplies, and the greenhouse needs care. Both jobs will matter later.",
-  },
-  {
-    speaker: "Leo · science lead",
-    title: "Is the discovery worth the power?",
-    text: "The instruments are ready in a cold, shaded work area. Their heaters will draw heavily on our battery. Check our reserve before you decide.",
-  },
-  {
-    speaker: "Mission control · Earth",
-    title: "Solar alert. Get the crew sheltered.",
-    text: "All four crew members will take cover. Your earlier preparations decide how ready we are. Remote experiments can continue if we can spare the power.",
-  },
-  {
-    speaker: "Maya · habitat engineer",
-    title: "A harvest depends on earlier care.",
-    text: "The plants were growing before we arrived. With yesterday’s care and enough light, we may harvest a small crop. Our packaged meals are still available.",
-  },
-  {
-    speaker: "Leo · science lead",
-    title: "Send our discoveries home.",
-    text: "Earth is listening. We can send our findings now, or service the ship and use our final downlink tomorrow.",
-  },
-  {
-    speaker: "Sam · mission specialist",
-    title: "Prepare the ship for departure.",
-    text: "Our week is almost over. Check the crew and habitat, or send any research still waiting. Our report will show what your decisions achieved.",
-  },
-];
+// presentation.js: the touch-screen movement joystick, an analog {x, y} push read by
+// controls.js. (Each day's briefing now lives in engine.js: days[i].speaker/.briefing.)
 
 // Touch joystick. Writes an analog push into input: x is -1 (left) .. 1 (right),
 // y is -1 (forward) .. 1 (back), and both are 0 when released. controls.js reads it.

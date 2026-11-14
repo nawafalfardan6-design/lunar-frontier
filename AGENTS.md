@@ -20,7 +20,7 @@ should help a child understand a real trade-off, not just look cool.
 | --- | --- |
 | Mission days, choices, consequences, scoring | `dist/engine.js`, `tests/engine.test.js` |
 | Movement, mouse/touch look, jumping, collision | `dist/controls.js`, touch joystick in `dist/presentation.js` |
-| Dialogs, HUD, menus, settings | `dist/hud.js`, `dist/index.html`, `dist/*.css` |
+| Dialogs, HUD, menus, settings | `dist/hud.js`, `dist/mission-panels.js` (HUD and dialog HTML), `dist/hud.css`, `dist/index.html`, `dist/*.css` |
 | Renderer, lighting, materials, gloves, beacon | `dist/scene.js`, `dist/surfaces.js` |
 | Moon terrain, rocks, sky, Earth, title-screen Moon | `dist/landscape.js` |
 | Spacecraft layout and stations | `dist/ship.js` |

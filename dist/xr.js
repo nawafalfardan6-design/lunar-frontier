@@ -84,7 +84,8 @@ export function createXR({ renderer, scene, camera, dialog, modal, interact, pos
       ctx.fillStyle = '#f5b574';
       ctx.fillRect(46, top, 932, 54);
       ctx.fillStyle = '#28263d';
-      ctx.fillText(button.firstChild?.textContent.trim() || button.innerText, 64, top + 36, 890);
+      // Choice buttons carry a one-line label with their forecast in data-short (mission-panels.js).
+      ctx.fillText(button.dataset.short || button.firstChild?.textContent.trim() || button.innerText, 64, top + 36, 890);
       return { button, top };
     });
     texture.needsUpdate = true;

@@ -67,11 +67,11 @@ git push                     # 5. then redeploy the site with Codex (see section
 | --- | --- |
 | Mission story, choices, scoring | `dist/engine.js` (+ `tests/engine.test.js`) |
 | Movement and controls | `dist/controls.js` (touch joystick: `dist/presentation.js`) |
-| Screens, dialogs, HUD | `dist/hud.js`, `dist/index.html`, `dist/*.css` |
+| Screens, dialogs, HUD | `dist/hud.js`, `dist/mission-panels.js`, `dist/hud.css`, `dist/index.html`, `dist/*.css` |
 | 3D graphics and lighting | `dist/scene.js`, `dist/surfaces.js` |
 | Moon terrain, sky, title Moon | `dist/landscape.js` |
 | Spacecraft rooms and stations | `dist/ship.js` |
-| Repair mini-games | `dist/tasks.js` |
+| Hands-on mini-games | `dist/tasks.js` |
 | Nora's hints | `dist/companion.js` |
 | VR | `dist/xr.js` |
 
