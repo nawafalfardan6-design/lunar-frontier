@@ -8,6 +8,7 @@
 //   tasks.js                 hands-on mini-games
 // Engine globals from engine.js (classic script): days, initial, decide, dailyBudget,
 // RESOURCES, RESOURCE_KEYS.
+import { createDebugMenu } from "./debug.js";
 import * as T from "./vendor/three.module.js";
 import { shipStations } from "./ship.js";
 import { createCompanion } from "./companion.js";
@@ -118,4 +119,5 @@ if (restored) {
 hud.updateMeters();
 hud.applyPreferences();
 hud.titleScreen();
+createDebugMenu(ctx);
 stage.renderer.setAnimationLoop(frame);

@@ -1153,3 +1153,23 @@ dialog #task-feedback {
     padding: 10px 8px;
   }
 }
+
+/* Debug tools keep native keyboard controls and stay inside the shared dialog. */
+.debug-panel pre {
+  padding: 16px;
+  border: 1px solid #647889;
+  border-radius: 8px;
+  background: #0d1821;
+  color: #c8e1ed;
+  font: 13px/1.7 monospace;
+  white-space: pre-wrap;
+}
+.debug-panel select {
+  width: 100%;
+  margin: 8px 0 16px;
+  padding: 12px;
+  background: #243541;
+  color: #eef4f7;
+}
+.debug-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.debug-actions button { flex: 1 1 140px; }
