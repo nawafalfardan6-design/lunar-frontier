@@ -16,7 +16,8 @@ Edit the files in `dist/` directly. The project has no build step.
 - `dist/world.js` is the 3D game's entry point: shared state, module wiring and the frame loop.
 - `dist/scene.js` and `dist/landscape.js` build the 3D world (renderer, lights, materials, terrain, sky).
 - `dist/controls.js` handles keyboard, mouse and touch look, movement physics and collision.
-- `dist/hud.js` handles the HUD text, dialogs, menus and settings.
+- `dist/hud.js` handles the HUD, dialogs, menus and settings. `dist/mission-panels.js` builds the
+  HTML for the HUD and the mission dialogs, styled by `dist/hud.css`.
 - `dist/engine.js` defines the seven mission days, choices, and consequences.
 - `dist/vendor/` contains Three.js and its license.
 
@@ -27,7 +28,7 @@ The in-game science cards link to NASA sources. Game resource values and scenari
 ## Current source layout
 
 - `dist/ship.js`: ship compartments, equipment and collision layout.
-- `dist/tasks.js`: valve, lock, power-routing, fluid and signal interactions.
+- `dist/tasks.js`: randomized valve, lock, power-routing, water and signal mini-games, one per kind of job.
 - `dist/surfaces.js`: locally generated metal-panel and lunar surface textures.
 - `dist/flight.css`: current neutral spacecraft interface styling, applied after legacy layout styles.
 - `dist/companion.js`: Nora and optional mission guidance.

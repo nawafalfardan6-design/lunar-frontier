@@ -21,8 +21,12 @@
     <section id="objective" aria-label="Today's job"></section>
     <div id="crosshair">+</div>
     <div id="prompt"></div>
+    <!-- Same controls text as the in-game help (CONTROLS_TEXT in mission-panels.js). -->
     <footer>
-      WASD move · Click scene to look · E interact · Esc pause
+      <span id="controls-help"
+        >WASD / arrows move · Shift runs · Click and move the mouse to look (Esc to pause) · E uses
+        a terminal · Space jumps</span
+      >
       <button id="interact">Use terminal</button>
     </footer>
     <!-- Touch controls. presentation.js replaces the first div with a joystick. -->

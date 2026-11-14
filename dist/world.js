@@ -86,14 +86,8 @@ function frame(time) {
   previous = time;
   const motion = ctx.playing && !dialog.open && !ctx.inMenu && !preferences.reducedMotion;
   stage.animateBackdrop(time, dt, motion);
-  // Today's terminal: the beacon (scene.js), the trail and the on-screen marker point at it.
+  // Today's terminal: the amber beacon (scene.js) and the on-screen marker point at it.
   const activeTarget = currentStation(ctx);
-  stage.guidance.update(
-    dt,
-    player,
-    activeTarget,
-    ctx.playing && !ctx.inMenu && !dialog.open && !ctx.state.ended,
-  );
   hud.updateMarker(activeTarget);
   if (stage.renderer.xr.isPresenting) {
     stage.hideGloves();

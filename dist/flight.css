@@ -195,17 +195,6 @@ dialog .choice span {
   }
 }
 
-#show-route {
-  position: fixed;
-  bottom: 75px;
-  right: 24px;
-  z-index: 5;
-  border-radius: 25px;
-  padding: 12px 22px;
-  background: #172b3ce8;
-  color: #bceaff;
-  border: 1px solid #8dcfea80;
-}
 #destination-marker {
   position: fixed;
   z-index: 4;
@@ -229,14 +218,6 @@ dialog .choice span {
   font: 12px Arial;
   white-space: nowrap;
 }
-#destination-marker[hidden],
-#show-route[hidden] {
+#destination-marker[hidden] {
   display: none;
-}
-@media (pointer: coarse) {
-  #show-route {
-    right: 16px;
-    bottom: 230px;
-    padding: 10px 16px;
-  }
 }

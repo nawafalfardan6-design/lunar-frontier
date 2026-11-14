@@ -16,6 +16,8 @@ import {
   resultHtml,
   reportHtml,
   goalsHtml,
+  guideHtml,
+  sourcesHtml,
 } from "./mission-panels.js";
 
 const SETTINGS_KEY = "lunar-frontier-settings";
@@ -26,6 +28,7 @@ export function loadPreferences() {
     moonSpin: true,
     sensitivity: 1,
     reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+    remoteAssist: false, // accessibility: a button that opens today's terminal from anywhere
   };
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
@@ -34,6 +37,7 @@ export function loadPreferences() {
     if (Number.isFinite(saved.sensitivity))
       preferences.sensitivity = Math.max(0.4, Math.min(2, saved.sensitivity));
     if (typeof saved.reducedMotion === "boolean") preferences.reducedMotion = saved.reducedMotion;
+    if (typeof saved.remoteAssist === "boolean") preferences.remoteAssist = saved.remoteAssist;
   } catch {}
   return preferences;
 }
@@ -61,16 +65,18 @@ export function createHud(ctx) {
   const prompt = document.getElementById("prompt");
   const interactButton = document.getElementById("interact");
 
-  const guideButton = document.createElement("button");
-  guideButton.id = "show-route";
-  guideButton.textContent = "Show trail";
-  guideButton.onclick = () => ctx.stage.guidance.show();
-  document.body.append(guideButton);
   const destination = document.createElement("div");
   destination.id = "destination-marker";
   destination.innerHTML = "<span>◇</span><small></small>";
   document.body.append(destination);
   const markerPosition = new T.Vector3();
+  // Remote assist opens today's terminal from anywhere. It is an accessibility
+  // setting, off by default; applyPreferences() shows or hides the button.
+  const stationAccess = document.createElement("button");
+  stationAccess.id = "station-access";
+  stationAccess.textContent = "Remote assist";
+  stationAccess.hidden = true;
+  document.body.append(stationAccess);
 
   // HUD panel (day, sunlight, meters, stars) and the beacon. Called when state changes.
   function updateMeters() {
@@ -104,11 +110,11 @@ export function createHud(ctx) {
     document.body.classList.remove("title-screen");
     ctx.playing = true;
     ctx.controls.relock(); // mouse: look around again without an extra click
-    ctx.stage.guidance.show();
   }
   function applyPreferences() {
     ctx.stage.applyQuality(preferences.quality);
     document.body.classList.toggle("reduce-motion", preferences.reducedMotion);
+    stationAccess.hidden = !preferences.remoteAssist;
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(preferences));
     } catch {}
@@ -129,7 +135,7 @@ export function createHud(ctx) {
       show(opening);
       document.getElementById("launch").onclick = resume;
     };
-    document.getElementById("settings").onclick = settingsMenu;
+    document.getElementById("settings").onclick = () => settingsMenu();
     document.getElementById("moon-spin").onclick = (event) => {
       preferences.moonSpin = !preferences.moonSpin;
       event.target.textContent = preferences.moonSpin ? "Pause rotation" : "Rotate Moon";
@@ -137,15 +143,16 @@ export function createHud(ctx) {
     };
     document.getElementById("how-to").onclick = () => {
       show(
-        '<span class="kicker">FIELD GUIDE</span><h2>Welcome, Commander.</h2><p>Walk to the amber marker and interact with its terminal. Each decision advances your seven-day mission and changes power, life support or crew safety.</p><p><b>WASD / arrows</b> — walk<br><b>Drag the mouse</b> — look<br><b>E</b> — use a terminal<br><b>Space</b> — jump<br><b>Shift</b> — walk faster<br><b>Escape</b> — pause</p><p>On touch screens, use the movement buttons and drag the world. Keep the crew safe, transmit research and help the crop experiment reach harvest.</p><button id="menu-back">Back to menu</button>',
+        `<section class="lf-panel lf-guide"><span class="kicker">FIELD GUIDE</span><h2>You are the commander.</h2><p>Selene has landed on the Moon with four crew. Keep them safe for ${days.length} days.</p>${guideHtml()}<button id="menu-back">Back to menu</button></section>`,
       );
       document.getElementById("menu-back").onclick = () => dialog.close();
     };
   }
 
-  function settingsMenu() {
+  // back: what "Done" does (close the dialog on the title screen, or return to pause).
+  function settingsMenu(back = () => dialog.close()) {
     show(
-      `<span class="kicker">MAKE YOURSELF AT HOME</span><h2>Settings</h2><div class="setting"><label for="quality">Graphics quality</label><select id="quality"><option value="high">High · shadows enabled</option><option value="low">Low · smoother performance</option></select></div><div class="setting"><label for="sensitivity">Look sensitivity <output id="sensitivity-value">${preferences.sensitivity.toFixed(1)}×</output></label><input id="sensitivity" type="range" min="0.4" max="2" step="0.1" value="${preferences.sensitivity}"></div><div class="setting check"><label for="motion">Reduce motion</label><input id="motion" type="checkbox" ${preferences.reducedMotion ? "checked" : ""}></div><p>Reduced motion stops decorative animations during the mission. Moon rotation has its own control on the title screen. Settings save on this device.</p><button id="settings-done">Done</button>`,
+      `<span class="kicker">MAKE YOURSELF AT HOME</span><h2>Settings</h2><div class="setting"><label for="quality">Graphics quality</label><select id="quality"><option value="high">High · shadows enabled</option><option value="low">Low · smoother performance</option></select></div><div class="setting"><label for="sensitivity">Look sensitivity <output id="sensitivity-value">${preferences.sensitivity.toFixed(1)}×</output></label><input id="sensitivity" type="range" min="0.4" max="2" step="0.1" value="${preferences.sensitivity}"></div><div class="setting check"><label for="motion">Reduce motion</label><input id="motion" type="checkbox" ${preferences.reducedMotion ? "checked" : ""}></div><div class="setting check"><label for="remote-assist">Remote assist: use terminals from anywhere</label><input id="remote-assist" type="checkbox" ${preferences.remoteAssist ? "checked" : ""}></div><p>Reduced motion stops decorative animations. Remote assist adds a button that opens today’s terminal from anywhere, so you don’t have to walk there. Settings save on this device.</p><button id="settings-done">Done</button>`,
     );
     document.getElementById("quality").value = preferences.quality;
     document.getElementById("quality").onchange = (e) => {
@@ -162,7 +169,11 @@ export function createHud(ctx) {
       preferences.reducedMotion = e.target.checked;
       applyPreferences();
     };
-    document.getElementById("settings-done").onclick = () => dialog.close();
+    document.getElementById("remote-assist").onchange = (e) => {
+      preferences.remoteAssist = e.target.checked;
+      applyPreferences();
+    };
+    document.getElementById("settings-done").onclick = back;
   }
 
   // Stars, warnings and today's power budget. back: what "Got it" does.
@@ -233,24 +244,21 @@ export function createHud(ctx) {
   }
   function pauseMenu() {
     show(
-      '<h2>Mission paused</h2><p>Your crew is waiting.</p><div class="lf-menu"><button id="resume" class="lf-primary">Resume exploration</button><button class="secondary" id="pause-goals">Mission goals ★</button><button class="secondary" id="main-menu">Main menu</button></div>',
+      '<h2>Mission paused</h2><p>Your crew is waiting.</p><div class="lf-menu"><button id="resume" class="lf-primary">Resume exploration</button><button class="secondary" id="pause-goals">Mission goals ★</button><button class="secondary" id="pause-settings">Settings</button><button class="secondary" id="main-menu">Main menu</button></div>',
     );
     document.getElementById("resume").onclick = resume;
     document.getElementById("pause-goals").onclick = () => goalsDialog(pauseMenu);
+    document.getElementById("pause-settings").onclick = () => settingsMenu(pauseMenu);
     document.getElementById("main-menu").onclick = titleScreen;
   }
 
   interactButton.onclick = () => interact();
-  const stationAccess = document.createElement("button");
-  stationAccess.id = "station-access";
-  stationAccess.textContent = "Remote assist";
   stationAccess.onclick = () => interact(true);
-  document.body.append(stationAccess);
   document.getElementById("help").onclick = () => {
     show(
-      '<h2>Explore the lander</h2><p>WASD or arrow keys move. Drag the mouse to look. E interacts near the amber marker. Space jumps. Shift moves faster. Escape pauses. Touch screens have movement buttons.</p><h3>Mission science</h3><p>Each turn represents one Earth day. Resource points, events and solar charging are simplified game rules. You are aboard the landed spacecraft Selene. Packaged meals sustain the crew while an existing crop experiment grows.</p><p><a href="https://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=LRO-L-DLRE-5-GCP-V1.0" target="_blank" rel="noopener">NASA Diviner</a> · <a href="https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/" target="_blank" rel="noopener">Life support</a> · <a href="https://www.nasa.gov/reference/crew-systems/" target="_blank" rel="noopener">Crew protection</a> · <a href="https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/" target="_blank" rel="noopener">Growing food</a></p><p>NASA science explanations are included. Numerical NASA measurements are still pending integration.</p><button id="return">Return to ship</button>',
+      `<section class="lf-panel lf-guide"><span class="kicker">CONTROLS &amp; SCIENCE</span><h2>How to play</h2>${guideHtml()}<h3 class="lf-subhead">The science</h3><p>Each turn is one Earth day aboard the landed spacecraft Selene. The numbers are simplified game rules, but the science ideas are real. Learn more from NASA:</p>${sourcesHtml()}<button id="return">${ctx.inMenu ? "Back to menu" : "Return to ship"}</button></section>`,
     );
-    document.getElementById("return").onclick = resume;
+    document.getElementById("return").onclick = () => (ctx.inMenu ? dialog.close() : resume());
   };
   dialog.addEventListener("cancel", (e) => e.preventDefault());
 
@@ -291,10 +299,9 @@ export function createHud(ctx) {
       };
     },
 
-    // Every frame: "Show trail" button and the on-screen marker over the target terminal.
+    // Every frame: the on-screen marker over the target terminal.
     updateMarker(activeTarget) {
       const { camera, renderer } = ctx.stage;
-      guideButton.hidden = ctx.inMenu || dialog.open || ctx.state.ended;
       destination.hidden = ctx.inMenu || dialog.open || ctx.state.ended || renderer.xr.isPresenting;
       if (!destination.hidden) {
         camera.updateMatrixWorld();

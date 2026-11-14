@@ -16,6 +16,10 @@ const NOTE_ICONS = { good: "✅", bad: "⚠️", info: "ℹ️", warn: "⚠️" 
 // These warnings are about time passing, not about a choice, so no choice "fixes" them.
 const NOT_FIXABLE = ["battery", "sunset"];
 
+export const CONTROLS_TEXT =
+  "WASD / arrows move · Shift runs · click and move the mouse to look (Esc to pause) · " +
+  "E uses a terminal · Space jumps · on phones, use the joystick and drag to look";
+
 export function esc(text) {
   return String(text).replace(
     /[&<>"']/g,
@@ -411,4 +415,45 @@ export function goalsHtml(state) {
     ${state.ended ? "" : warnings + budgetLine(dayIndex)}
     <button type="button" id="goals-close">Got it</button>
   </section>`;
+}
+
+/* ------------------------------------------------------------------ */
+/* How to play and help                                                */
+/* ------------------------------------------------------------------ */
+
+// The five rules, shared by "How to play" and the in-game help.
+export function guideHtml() {
+  const rules = [
+    [
+      "🧭",
+      `Each day, walk to the glowing ◇ terminal and pick <b>one job</b>. The mission lasts ${days.length} days.`,
+    ],
+    [
+      "📊",
+      "Watch the <b>4 meters</b>: ⚡ Battery, 💨 Air &amp; Water, 🛡️ Crew Safety and 🔬 Science. Every choice shows how they will change.",
+    ],
+    [
+      "☀️",
+      `The ship uses ⚡ every day. Solar panels refill it while the Sun is up. <b>The Sun sets on Day ${SUNSET_DAY}</b>: in the lunar night there is no solar power, and the heaters use more ⚡.`,
+    ],
+    ["⚠️", "<b>Warnings</b> tell you what will go wrong, on which day, and how to fix it."],
+    [
+      "⭐",
+      `<b>Earn stars</b>: send research home, harvest the plants, save ⚡ for the night and keep the crew healthy. Keep 💨 and 🛡️ at ${SAFE_LEVEL}+ and earn 2 stars to win.`,
+    ],
+  ];
+  return `<ul class="lf-rules">${rules
+    .map(([icon, text]) => `<li><span aria-hidden="true">${icon}</span><span>${text}</span></li>`)
+    .join("")}</ul>
+  <p class="lf-controls"><b>Controls:</b> ${esc(CONTROLS_TEXT)}</p>`;
+}
+
+// NASA pages behind each day's science, for the help dialog.
+export function sourcesHtml() {
+  const seen = new Set();
+  const links = days
+    .filter((day) => !seen.has(day.source.url) && seen.add(day.source.url))
+    .map((day) => `<li>${sourceLink(day.source, `${esc(day.source.label)} ↗`)}</li>`)
+    .join("");
+  return `<ul class="lf-sources">${links}</ul>`;
 }
