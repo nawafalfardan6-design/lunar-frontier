@@ -12,6 +12,27 @@ let state = initial(),
 const keys = new Set(),
   player = new T.Vector3(0, 1.8, 13),
   obstacles = [];
+let inMenu = true;
+let missionStarted = false;
+const preferences = {
+  quality: "high",
+  sensitivity: 1,
+  reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+};
+try {
+  const saved = JSON.parse(
+    localStorage.getItem("lunar-frontier-settings") || "{}",
+  );
+  if (["low", "high"].includes(saved.quality))
+    preferences.quality = saved.quality;
+  if (Number.isFinite(saved.sensitivity))
+    preferences.sensitivity = Math.max(0.4, Math.min(2, saved.sensitivity));
+  if (typeof saved.reducedMotion === "boolean")
+    preferences.reducedMotion = saved.reducedMotion;
+} catch {}
+const entry = document.createElement("section");
+entry.id = "entry";
+document.body.append(entry);
 let renderer;
 try {
   renderer = new T.WebGLRenderer({ canvas, antialias: true });
@@ -30,6 +51,75 @@ const scene = new T.Scene();
 scene.background = new T.Color(0x201c38);
 scene.fog = new T.FogExp2(0x514366, 0.0025);
 const camera = new T.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 650);
+const menuScene = new T.Scene();
+menuScene.background = new T.Color(0x201c38);
+const menuCamera = new T.PerspectiveCamera(
+  42,
+  innerWidth / innerHeight,
+  0.1,
+  600,
+);
+menuCamera.position.set(0, 0, 16);
+menuScene.add(new T.AmbientLight(0x9a86bc, 0.7));
+const moonlight = new T.DirectionalLight(0xffdeb4, 3.4);
+moonlight.position.set(-4, 5, 8);
+menuScene.add(moonlight);
+const moonGeometry = new T.SphereGeometry(3.6, 96, 64);
+const moonVertices = moonGeometry.attributes.position;
+const craterCenters = [];
+for (let i = 0; i < 32; i++) {
+  const azimuth = i * 2.399963;
+  const height = 1 - (i + 0.5) / 16;
+  craterCenters.push({
+    center: new T.Vector3(
+      Math.cos(azimuth) * Math.sqrt(1 - height * height),
+      height,
+      Math.sin(azimuth) * Math.sqrt(1 - height * height),
+    ),
+    radius: 0.08 + (i % 5) * 0.035,
+  });
+}
+const moonColors = [];
+for (let i = 0; i < moonVertices.count; i++) {
+  const direction = new T.Vector3()
+    .fromBufferAttribute(moonVertices, i)
+    .normalize();
+  let depth = 0;
+  for (const crater of craterCenters) {
+    const distance = direction.distanceTo(crater.center) / crater.radius;
+    if (distance < 1) depth -= 0.13 * (1 - distance * distance);
+    if (distance >= 0.85 && distance < 1.2)
+      depth += 0.045 * Math.sin(((distance - 0.85) / 0.35) * Math.PI);
+  }
+  const variation =
+    Math.sin(direction.x * 9 + direction.z * 3) *
+    Math.cos(direction.y * 8) *
+    0.035;
+  moonVertices.setXYZ(
+    i,
+    direction.x * (3.6 + depth),
+    direction.y * (3.6 + depth),
+    direction.z * (3.6 + depth),
+  );
+  const color = new T.Color().setHSL(
+    0.09,
+    0.12,
+    0.57 + variation + depth * 0.8,
+  );
+  moonColors.push(color.r, color.g, color.b);
+}
+moonGeometry.setAttribute("color", new T.Float32BufferAttribute(moonColors, 3));
+moonGeometry.computeVertexNormals();
+const menuMoon = new T.Mesh(
+  moonGeometry,
+  new T.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 1,
+    flatShading: true,
+  }),
+);
+menuMoon.position.x = 3.2;
+menuScene.add(menuMoon);
 camera.rotation.order = "YXZ";
 scene.add(new T.HemisphereLight(0xb9b5ed, 0x594c65, 2.1));
 const sun = new T.DirectionalLight(0xffd5a1, 2.6);
@@ -171,6 +261,9 @@ scene.add(
     starGeo,
     new T.PointsMaterial({ color: 0xddeeff, size: 0.55, fog: false }),
   ),
+);
+menuScene.add(
+  new T.Points(starGeo, new T.PointsMaterial({ color: 0xf1ddbd, size: 0.6 })),
 );
 const earth = mesh(
   new T.SphereGeometry(9, 32, 24),
@@ -368,7 +461,60 @@ function show(html) {
 }
 function resume() {
   dialog.close();
+  inMenu = false;
+  missionStarted = true;
+  document.body.classList.remove("title-screen");
   playing = true;
+}
+function applyPreferences() {
+  renderer.setPixelRatio(
+    preferences.quality === "low" ? 1 : Math.min(devicePixelRatio, 1.7),
+  );
+  renderer.shadowMap.enabled = preferences.quality === "high";
+  resize();
+  try {
+    localStorage.setItem(
+      "lunar-frontier-settings",
+      JSON.stringify(preferences),
+    );
+  } catch {}
+}
+function titleScreen() {
+  playing = false;
+  inMenu = true;
+  keys.clear();
+  dialog.close();
+  document.body.classList.add("title-screen");
+  entry.innerHTML = `<div class="entry-panel"><span class="entry-eyebrow">A LITTLE OUTPOST. A BIG ADVENTURE.</span><h1>LUNAR<br><span>FRONTIER</span></h1><p class="entry-tagline">Your mission. Your crew.<br>Your decisions.</p><nav aria-label="Main menu"><button id="start-game">${missionStarted ? "CONTINUE EXPEDITION" : "START EXPEDITION"} <span>↗</span></button><button id="settings">SETTINGS <span>⚙</span></button><button id="how-to">HOW TO PLAY <span>?</span></button></nav><p class="menu-note">4 astronauts · 7 days · One small step at a time</p></div><div class="moon-caption">THE MOON<span>YOUR NEXT FRONTIER</span></div><div class="entry-footer">LUNAR FRONTIER <span>A SPACE EXPLORATION GAME</span></div>`;
+  document.getElementById("start-game").onclick = resume;
+  document.getElementById("settings").onclick = settingsMenu;
+  document.getElementById("how-to").onclick = () => {
+    show(
+      '<span class="kicker">FIELD GUIDE</span><h2>Welcome, Commander.</h2><p>Walk to the amber marker and interact with its terminal. Each decision advances your seven-day mission and changes power, life support or crew safety.</p><p><b>WASD / arrows</b> — walk<br><b>Drag the mouse</b> — look<br><b>E</b> — use a terminal<br><b>Space</b> — jump<br><b>Shift</b> — walk faster<br><b>Escape</b> — pause</p><p>On touch screens, use the movement buttons and drag the world. Keep the crew safe, transmit research and help the crop experiment reach harvest.</p><button id="menu-back">Back to menu</button>',
+    );
+    document.getElementById("menu-back").onclick = () => dialog.close();
+  };
+}
+function settingsMenu() {
+  show(
+    `<span class="kicker">MAKE YOURSELF AT HOME</span><h2>Settings</h2><div class="setting"><label for="quality">Graphics quality</label><select id="quality"><option value="high">High · shadows enabled</option><option value="low">Low · smoother performance</option></select></div><div class="setting"><label for="sensitivity">Look sensitivity <output id="sensitivity-value">${preferences.sensitivity.toFixed(1)}×</output></label><input id="sensitivity" type="range" min="0.4" max="2" step="0.1" value="${preferences.sensitivity}"></div><div class="setting check"><label for="motion">Reduce motion</label><input id="motion" type="checkbox" ${preferences.reducedMotion ? "checked" : ""}></div><p>Reduced motion stops the Moon rotation and decorative animations. Settings save on this device.</p><button id="settings-done">Done</button>`,
+  );
+  document.getElementById("quality").value = preferences.quality;
+  document.getElementById("quality").onchange = (e) => {
+    preferences.quality = e.target.value;
+    applyPreferences();
+  };
+  document.getElementById("sensitivity").oninput = (e) => {
+    preferences.sensitivity = Number(e.target.value);
+    document.getElementById("sensitivity-value").textContent =
+      preferences.sensitivity.toFixed(1) + "×";
+    applyPreferences();
+  };
+  document.getElementById("motion").onchange = (e) => {
+    preferences.reducedMotion = e.target.checked;
+    applyPreferences();
+  };
+  document.getElementById("settings-done").onclick = () => dialog.close();
 }
 function report() {
   show(
@@ -422,7 +568,7 @@ function jump() {
 }
 document.getElementById("jump").onclick = jump;
 document.addEventListener("keydown", (e) => {
-  if (dialog.open) return;
+  if (dialog.open || inMenu) return;
   if (e.code === "Escape") {
     pause();
     return;
@@ -443,9 +589,10 @@ function pause() {
   if (!playing || dialog.open) return;
   playing = false;
   show(
-    '<h2>Mission paused</h2><p>Your crew is waiting.</p><button id="resume">Resume exploration</button>',
+    '<h2>Mission paused</h2><p>Your crew is waiting.</p><button id="resume">Resume exploration</button><button class="secondary" id="main-menu">Main menu</button>',
   );
   document.getElementById("resume").onclick = resume;
+  document.getElementById("main-menu").onclick = titleScreen;
 }
 window.addEventListener("blur", pause);
 document.addEventListener("visibilitychange", () => {
@@ -456,8 +603,12 @@ document.addEventListener("pointerlockchange", () => {
   if (!document.pointerLockElement) pause();
 });
 function look(dx, dy) {
-  yaw -= dx * 0.003;
-  pitch = T.MathUtils.clamp(pitch - dy * 0.003, -1.25, 1.25);
+  yaw -= dx * 0.003 * preferences.sensitivity;
+  pitch = T.MathUtils.clamp(
+    pitch - dy * 0.003 * preferences.sensitivity,
+    -1.25,
+    1.25,
+  );
 }
 document.addEventListener("mousemove", (e) => {
   if (playing && !dialog.open && document.pointerLockElement === canvas)
@@ -465,7 +616,7 @@ document.addEventListener("mousemove", (e) => {
 });
 let drag = null;
 canvas.addEventListener("pointerdown", (e) => {
-  if (dialog.open) return;
+  if (dialog.open || inMenu) return;
   playing = true;
   drag = { x: e.clientX, y: e.clientY };
   canvas.setPointerCapture(e.pointerId);
@@ -500,6 +651,14 @@ function resize() {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  menuCamera.aspect = innerWidth / innerHeight;
+  menuCamera.updateProjectionMatrix();
+  menuMoon.position.set(
+    innerWidth < 700 ? 0.9 : 3.2,
+    innerWidth < 700 ? 1.6 : 0,
+    0,
+  );
+  menuMoon.scale.setScalar(innerWidth < 700 ? 0.75 : 1);
 }
 window.addEventListener("resize", resize);
 resize();
@@ -508,6 +667,11 @@ function frame(time) {
   requestAnimationFrame(frame);
   const dt = Math.min((time - previous) / 1000, 0.05);
   previous = time;
+  if (inMenu) {
+    if (!preferences.reducedMotion) menuMoon.rotation.y += dt * 0.045;
+    renderer.render(menuScene, menuCamera);
+    return;
+  }
   if (playing && !dialog.open) {
     let forward =
         Number(keys.has("KeyW") || keys.has("ArrowUp")) -
@@ -529,9 +693,14 @@ function frame(time) {
   }
   camera.position.set(player.x, player.y + jumpY, player.z);
   camera.rotation.set(pitch, yaw, 0, "YXZ");
-  arrow.position.y = 3 + Math.sin(time * 0.003) * 0.2;
+  arrow.position.y = preferences.reducedMotion
+    ? 3
+    : 3 + Math.sin(time * 0.003) * 0.2;
   crew.forEach(
-    (p, i) => (p.rotation.y = Math.sin(time * 0.0003 + i) * 0.3 + i),
+    (p, i) =>
+      (p.rotation.y = preferences.reducedMotion
+        ? i
+        : Math.sin(time * 0.0003 + i) * 0.3 + i),
   );
   const s = stations[Math.min(state.day, 6)],
     distance = Math.hypot(s.x - player.x, s.z - player.z);
@@ -557,8 +726,6 @@ function frame(time) {
   renderer.render(scene, camera);
 }
 hud();
-show(
-  '<span class="kicker">LUNAR FRONTIER / 3D EXPEDITION</span><h1>Your boots.<br>The Moon.<br>Seven days to lead.</h1><p>Walk around your outpost, find the glowing mission terminals and keep four explorers ready for tomorrow.</p><p><b>WASD</b> to walk · <b>Drag</b> to look<br><b>E</b> to interact · <b>Space</b> to jump</p><p>Follow the amber marker. On touch screens, use the movement buttons and drag the world to look.</p><button id="begin">Step onto the Moon →</button>',
-);
-document.getElementById("begin").onclick = resume;
+applyPreferences();
+titleScreen();
 requestAnimationFrame(frame);
