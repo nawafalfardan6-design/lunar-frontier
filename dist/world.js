@@ -135,7 +135,7 @@ menuScene.add(menuMoon);
 camera.rotation.order = "YXZ";
 scene.add(new T.HemisphereLight(0xdde6ef, 0x272b30, 1.2));
 const sun = new T.DirectionalLight(0xffffff, 2.4);
-sun.position.set(-35, 45, 18);
+sun.position.set(17, 10, -41);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, {
@@ -206,13 +206,13 @@ function random() {
   seed = (seed * 1664525 + 1013904223) >>> 0;
   return seed / 4294967296;
 }
-const terrain = new T.PlaneGeometry(500, 500, 90, 90);
+const terrain = new T.PlaneGeometry(500, 500, 150, 150);
 terrain.rotateX(-Math.PI / 2);
 const positions = terrain.attributes.position;
 for (let i = 0; i < positions.count; i++) {
   const x = positions.getX(i),
     z = positions.getZ(i);
-  positions.setY(i, Math.hypot(x, z) < 60 ? -0.06 : (random() - 0.4) * 2.5);
+  positions.setY(i, Math.hypot(x, z) < 60 ? -0.06 : Math.sin(x*.041)*Math.cos(z*.037)*1.2+Math.sin(x*.14+z*.09)*.35);
 }
 terrain.computeVertexNormals();
 const ground = terrain.toNonIndexed();
@@ -228,7 +228,7 @@ mesh(
   new T.MeshStandardMaterial({
     vertexColors: true,
     roughness: 1,
-    flatShading: true,
+    flatShading: false,
   }),
   0,
   0,
@@ -241,7 +241,7 @@ for (let i = 0; i < 150; i++) {
   const size = 0.4 + random() * 3;
   const rock = mesh(
     new T.IcosahedronGeometry(size, 2),
-    mat(0x777779),
+    new T.MeshStandardMaterial({color:0x777779,roughness:1}),
     x,
     size * 0.2,
     z,
@@ -249,28 +249,34 @@ for (let i = 0; i < 150; i++) {
   rock.scale.y = 0.55;
   rock.rotation.set(random(), random() * 6, random());
 }
+const ridgeMaterial=new T.MeshStandardMaterial({color:0x66676a,roughness:1});
 for(let i=0;i<30;i++) {
- const a=i/30*Math.PI*2;
- const hill=mesh(new T.SphereGeometry(1,32,16),mat(0x68686a),Math.sin(a)*210,-8,Math.cos(a)*210);
- hill.scale.set(32+random()*30,18+random()*22,35+random()*25);
+ const a=i/30*Math.PI*2, geo=new T.SphereGeometry(1,40,24), vertices=geo.attributes.position;
+ for(let j=0;j<vertices.count;j++){
+  const x=vertices.getX(j),y=vertices.getY(j),z=vertices.getZ(j);
+  const erosion=1+.12*Math.sin(x*13+z*7+i)+.07*Math.sin(z*21-y*9);
+  vertices.setXYZ(j,x*erosion,y*(.8+.15*Math.sin(x*8+z*11+i)),z*erosion);
+ }
+ geo.computeVertexNormals();
+ const hill=mesh(geo,ridgeMaterial,Math.sin(a)*210,-10,Math.cos(a)*210);
+ hill.scale.set(40+random()*30,15+random()*15,35+random()*25);
 }
-const stars = new Float32Array(5400);
+const sky = new T.Group();scene.add(sky);
+const skyAnchor=new T.Vector3();
+const stars = new Float32Array(12000);
 for (let i = 0; i < stars.length; i += 3) {
   const a = random() * 6.28,
     h = random(),
-    r = 340;
+    r = 520;
   stars[i] = Math.cos(a) * Math.sqrt(1 - h * h) * r;
   stars[i + 1] = h * r;
   stars[i + 2] = Math.sin(a) * Math.sqrt(1 - h * h) * r;
 }
 const starGeo = new T.BufferGeometry();
 starGeo.setAttribute("position", new T.BufferAttribute(stars, 3));
-scene.add(
-  new T.Points(
-    starGeo,
-    new T.PointsMaterial({ color: 0xddeeff, size: 1.2, sizeAttenuation: false, fog: false }),
-  ),
-);
+const starfield=new T.Points(starGeo,new T.PointsMaterial({color:0xe6f0ff,size:1.8,sizeAttenuation:false,depthWrite:false,toneMapped:false}));starfield.renderOrder=-1000;sky.add(starfield);
+const brightStarGeo=new T.BufferGeometry();brightStarGeo.setAttribute('position',new T.BufferAttribute(stars.slice(0,540),3));
+const brightStars=new T.Points(brightStarGeo,new T.PointsMaterial({color:0xffffff,size:2.8,sizeAttenuation:false,depthWrite:false,toneMapped:false}));brightStars.renderOrder=-1000;sky.add(brightStars);
 // A full backdrop keeps stars visible at both desktop and phone aspect ratios.
 const titleStars = new Float32Array(1500);
 for (let i=0;i<titleStars.length;i+=3) {
@@ -288,12 +294,18 @@ const continents=[[[130,100],[250,65],[330,130],[260,210],[220,250],[160,180]],[
 earthCtx.fillStyle='#789071';for(const points of continents){earthCtx.beginPath();points.forEach(([x,y],i)=>i?earthCtx.lineTo(x,y):earthCtx.moveTo(x,y));earthCtx.closePath();earthCtx.fill();}
 for(let i=0;i<220;i++){earthCtx.fillStyle=`rgba(244,249,255,${.12+random()*.25})`;earthCtx.beginPath();earthCtx.ellipse(random()*1024,random()*512,15+random()*65,2+random()*10,-.3,0,Math.PI*2);earthCtx.fill();}
 const earthTexture=new T.CanvasTexture(earthCanvas);earthTexture.colorSpace=T.SRGBColorSpace;
-const earth=mesh(new T.SphereGeometry(32,64,48),new T.MeshStandardMaterial({map:earthTexture,roughness:.8,emissiveMap:earthTexture,emissive:0xffffff,emissiveIntensity:.45}),0,40,-180);
+const earth=mesh(new T.SphereGeometry(14,64,48),new T.MeshStandardMaterial({map:earthTexture,roughness:.8,emissiveMap:earthTexture,emissive:0xffffff,emissiveIntensity:.25,depthWrite:false}),-90,140,-440);
 earth.rotation.y=-1.6;
-const atmosphere=mesh(new T.SphereGeometry(32.6,64,48),new T.MeshBasicMaterial({color:0x6dbfff,transparent:true,opacity:.12,side:T.BackSide,depthWrite:false}),0,0,0,earth);
-buildShip(scene,box,mesh,mat,obstacle);
+const atmosphere=mesh(new T.SphereGeometry(14.25,64,48),new T.MeshBasicMaterial({color:0x6dbfff,transparent:true,opacity:.12,side:T.BackSide,depthWrite:false}),0,0,0,earth);
+sky.add(earth);earth.renderOrder=-999;earth.castShadow=false;earth.receiveShadow=false;atmosphere.renderOrder=-998;
+// Sky objects follow the viewer: no nearby-object parallax or motion through terrain.
+const solarDisc=new T.Mesh(new T.SphereGeometry(2.3,32,24),new T.MeshBasicMaterial({color:0xffffff,toneMapped:false,depthWrite:false}));solarDisc.position.set(170,100,-410);solarDisc.renderOrder=-999;sky.add(solarDisc);
+const haloCanvas=document.createElement('canvas');haloCanvas.width=haloCanvas.height=128;const hc=haloCanvas.getContext('2d');const hg=hc.createRadialGradient(64,64,2,64,64,64);hg.addColorStop(0,'rgba(255,250,225,.85)');hg.addColorStop(.15,'rgba(255,244,214,.3)');hg.addColorStop(1,'rgba(255,244,214,0)');hc.fillStyle=hg;hc.fillRect(0,0,128,128);
+const sunHalo=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(haloCanvas),transparent:true,depthWrite:false,toneMapped:false,blending:T.AdditiveBlending}));sunHalo.position.copy(solarDisc.position);sunHalo.scale.set(25,25,1);sunHalo.renderOrder=-998;sky.add(sunHalo);
+const animateShip=buildShip(scene,box,mesh,mat,obstacle);
 function astronaut(x, z, color) {
   const g = new T.Group();
+  g.userData.arms=[];
   g.position.set(x, 0, z);
   scene.add(g);
   mesh(new T.CapsuleGeometry(0.32,0.4,8,16),mat(0xe2e7e9),0,1.2,0,g);
@@ -309,7 +321,7 @@ function astronaut(x, z, color) {
   ).scale.z = 0.6;
   for (const side of [-1, 1]) {
     mesh(new T.CapsuleGeometry(0.13,0.48,6,12),mat(0xd8dfe3),side*0.2,0.42,0,g);
-    mesh(new T.CapsuleGeometry(0.12,0.5,6,12),mat(0xd8dfe3),side*0.45,1.1,0,g);
+    const arm=mesh(new T.CapsuleGeometry(0.12,0.5,6,12),mat(0xd8dfe3),side*0.45,1.1,0,g);g.userData.arms.push(arm);
   }
   box(0.5, 0.16, 0.53, color, 0, 1.2, 0, g);
   return g;
@@ -615,6 +627,14 @@ vrButton.onclick = async () => {
 function frame(time) {
   const dt = Math.min((time - previous) / 1000, 0.05);
   previous = time;
+  camera.getWorldPosition(skyAnchor);sky.position.copy(skyAnchor);
+  const motion=playing&&!dialog.open&&!inMenu&&!preferences.reducedMotion;
+  animateShip(time*.001,motion);
+  if(motion)earth.rotation.y+=dt*.003;
+  crew.forEach((person,i)=>{
+    person.position.y=motion?Math.sin(time*.0015+i)*.012:0;
+    person.userData.arms.forEach((arm,j)=>{arm.rotation.x=motion?-.15+Math.sin(time*.0008+i+j)*.14:0;arm.rotation.z=(j?1:-1)*.06;});
+  });
   const activeTarget=stations[Math.min(state.day,6)];
   guidance.update(dt,player,activeTarget,playing&&!inMenu&&!dialog.open&&!state.ended);
   guideButton.hidden=inMenu||dialog.open||state.ended;
@@ -641,6 +661,10 @@ function frame(time) {
   glove.position.set(armX - gloveReach*.08,-.22+gloveReach*.06,-.48-gloveReach*.15);
   leftGlove.position.set(-armX,-.22,-.48);leftGlove.rotation.x=-.22;
   glove.rotation.x = -0.28 - gloveReach * 0.6;
+  const walking=motion&&['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].some(k=>keys.has(k));
+  const sway=motion?Math.sin(time*(walking?.008:.0018))*(walking?.012:.003):0;
+  glove.position.y+=sway;leftGlove.position.y-=sway;
+  glove.rotation.z=walking?Math.sin(time*.008)*.025:0;leftGlove.rotation.z=-glove.rotation.z;
   if (inMenu) {
     if (preferences.moonSpin) menuMoon.rotation.y += dt * 0.20;
     renderer.render(menuScene, menuCamera);

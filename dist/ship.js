@@ -8,6 +8,7 @@ export const shipStations = [
 ];
 
 export function buildShip(scene,box,mesh,mat,obstacle) {
+  const fans=[],indicators=[],scans=[];
   const hull=0x777d83, trim=0x30353b, wall=0xb7babc;
   box(19,0.3,28,trim,0,-0.15,0);
   box(19,0.3,28,trim,0,3.5,0);
@@ -50,6 +51,8 @@ export function buildShip(scene,box,mesh,mat,obstacle) {
     c.font='18px monospace';c.fillText('SELENE / SYSTEM CONTROL',25,225);
     const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;
     mesh(new T.PlaneGeometry(1.65,0.82),new T.MeshBasicMaterial({map:texture}),0,1.5,0.46,group);
+    const scan=mesh(new T.PlaneGeometry(1.55,.018),new T.MeshBasicMaterial({color:0xa5dded,transparent:true,opacity:.45}),0,1.15,.47,group);scans.push(scan);
+    const led=mesh(new T.SphereGeometry(.035,8,6),new T.MeshBasicMaterial({color:0x85c4b5}),.62,.88,.48,group);indicators.push(led);
     obstacle(x,z,1.6,0.9);
   }
   for(const index of [0,1,2,4,5,6]) {
@@ -105,4 +108,18 @@ export function buildShip(scene,box,mesh,mat,obstacle) {
     obstacle(-7.5,z,1,1);
   }
   box(1.2,0.3,1.4,trim,7.2,0.6,9);box(1.2,1.1,0.2,0x656e76,7.2,1.1,9.6);obstacle(7.2,9,1.2,1.6);
+  // Recessed ventilation fans in the service bulkheads.
+  for(const [x,z] of [[-6,-3.8],[6,-3.8],[-6,4.2],[6,4.2]]) {
+    const fan=new T.Group();fan.position.set(x,2.55,z);scene.add(fan);
+    const rim=mesh(new T.TorusGeometry(.25,.035,8,24),mat(0x88929c),x,2.55,z);
+    mesh(new T.CircleGeometry(.23,24),mat(0x171d23),x,2.55,z-.025);
+    for(let i=0;i<4;i++){const blade=box(.12,.33,.025,0x59656e,0,0,0,fan);blade.rotation.z=i*Math.PI/2;blade.position.set(Math.sin(i*Math.PI/2)*.1,Math.cos(i*Math.PI/2)*.1,0);}
+    fans.push(fan);
+  }
+  return (time,motion)=>{
+    fans.forEach((fan,i)=>{if(motion)fan.rotation.z=time*(2+i*.15);});
+    scans.forEach((scan,i)=>{scan.position.y=motion?1.12+((time*.16+i*.19)%1)*.72:1.45;});
+    indicators.forEach((led,i)=>{led.material.color.setHex(motion&&Math.sin(time*1.2+i)>.85?0xc4ebdf:0x72a99a);});
+  };
+
 }
