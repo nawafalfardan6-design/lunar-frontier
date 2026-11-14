@@ -1,3 +1,4 @@
+import {createGuidance} from './navigation.js';
 import {surfaceTexture} from './surfaces.js';
 import {startTask} from './tasks.js';
 import {buildShip, shipStations} from './ship.js';
@@ -267,7 +268,7 @@ starGeo.setAttribute("position", new T.BufferAttribute(stars, 3));
 scene.add(
   new T.Points(
     starGeo,
-    new T.PointsMaterial({ color: 0xddeeff, size: 0.55, fog: false }),
+    new T.PointsMaterial({ color: 0xddeeff, size: 1.2, sizeAttenuation: false, fog: false }),
   ),
 );
 // A full backdrop keeps stars visible at both desktop and phone aspect ratios.
@@ -280,31 +281,16 @@ for (let i=0;i<titleStars.length;i+=3) {
 const titleStarGeometry=new T.BufferGeometry();
 titleStarGeometry.setAttribute('position',new T.BufferAttribute(titleStars,3));
 menuScene.add(new T.Points(titleStarGeometry,new T.PointsMaterial({color:0xd8e9f7,size:1.6,sizeAttenuation:false,transparent:true,opacity:0.85})));
-const earth = mesh(
-  new T.SphereGeometry(9, 32, 24),
-  mat(0x3c85bb),
-  75,
-  65,
-  -180,
-);
-for (let i = 0; i < 15; i++) {
-  const cloud = mesh(
-    new T.SphereGeometry(1 + random() * 2, 12, 8),
-    mat(i % 3 ? 0xd1e6e9 : 0x7eae95),
-    0,
-    0,
-    0,
-    earth,
-  );
-  const a = random() * 6.28,
-    b = random() * 2.4;
-  cloud.position.set(
-    Math.sin(a) * Math.sin(b) * 8.8,
-    Math.cos(b) * 8.8,
-    Math.cos(a) * Math.sin(b) * 8.8,
-  );
-  cloud.scale.y = 0.5;
-}
+const earthCanvas=document.createElement('canvas');earthCanvas.width=1024;earthCanvas.height=512;
+const earthCtx=earthCanvas.getContext('2d');earthCtx.fillStyle='#155c96';earthCtx.fillRect(0,0,1024,512);
+// Approximate continent silhouettes and cloud bands on a spherical globe.
+const continents=[[[130,100],[250,65],[330,130],[260,210],[220,250],[160,180]],[[270,240],[350,270],[370,330],[310,440],[280,370]],[[470,150],[550,160],[600,250],[555,340],[500,270]],[[510,115],[610,70],[800,100],[880,190],[740,240],[650,180]],[[800,340],[885,315],[920,375],[850,400]]];
+earthCtx.fillStyle='#789071';for(const points of continents){earthCtx.beginPath();points.forEach(([x,y],i)=>i?earthCtx.lineTo(x,y):earthCtx.moveTo(x,y));earthCtx.closePath();earthCtx.fill();}
+for(let i=0;i<220;i++){earthCtx.fillStyle=`rgba(244,249,255,${.12+random()*.25})`;earthCtx.beginPath();earthCtx.ellipse(random()*1024,random()*512,15+random()*65,2+random()*10,-.3,0,Math.PI*2);earthCtx.fill();}
+const earthTexture=new T.CanvasTexture(earthCanvas);earthTexture.colorSpace=T.SRGBColorSpace;
+const earth=mesh(new T.SphereGeometry(32,64,48),new T.MeshStandardMaterial({map:earthTexture,roughness:.8,emissiveMap:earthTexture,emissive:0xffffff,emissiveIntensity:.45}),0,40,-180);
+earth.rotation.y=-1.6;
+const atmosphere=mesh(new T.SphereGeometry(32.6,64,48),new T.MeshBasicMaterial({color:0x6dbfff,transparent:true,opacity:.12,side:T.BackSide,depthWrite:false}),0,0,0,earth);
 buildShip(scene,box,mesh,mat,obstacle);
 function astronaut(x, z, color) {
   const g = new T.Group();
@@ -350,6 +336,11 @@ const arrow = mesh(
   beacon,
 );
 arrow.rotation.z = Math.PI;
+const guidance=createGuidance(scene,clearAt);
+const guideButton=document.createElement('button');guideButton.id='show-route';guideButton.textContent='Show trail';guideButton.onclick=()=>guidance.show();document.body.append(guideButton);
+const destination=document.createElement('div');destination.id='destination-marker';destination.innerHTML='<span>◇</span><small></small>';document.body.append(destination);
+const markerPosition=new T.Vector3();
+
 function hud() {
   document.getElementById("hud").innerHTML =
     `<div class="kicker">DAY ${Math.min(state.day + 1, 7)} / 7 · CREW 04</div>` +
@@ -378,6 +369,7 @@ function resume() {
   missionStarted = true;
   document.body.classList.remove("title-screen");
   playing = true;
+  guidance.show();
 }
 function applyPreferences() {
   renderer.setPixelRatio(
@@ -589,6 +581,12 @@ resize();
 let previous = performance.now();
 const glove = astronautGlove();
 camera.add(glove);
+const leftGlove=astronautGlove();camera.add(leftGlove);leftGlove.scale.x=-1;
+for(const hand of [glove,leftGlove]){
+ const sleeve=new T.Mesh(new T.CapsuleGeometry(.055,.22,6,16),new T.MeshStandardMaterial({color:0xdce1e7,roughness:.85}));sleeve.rotation.x=Math.PI/2;sleeve.position.set(0,-.018,.21);hand.add(sleeve);
+ hand.scale.multiplyScalar(1.35);
+}
+
 let gloveReach = 0;
 const xr = createXR({renderer, scene, camera, dialog, modal, interact, position: player,
   move(dx,dz) {
@@ -617,15 +615,31 @@ vrButton.onclick = async () => {
 function frame(time) {
   const dt = Math.min((time - previous) / 1000, 0.05);
   previous = time;
+  const activeTarget=stations[Math.min(state.day,6)];
+  guidance.update(dt,player,activeTarget,playing&&!inMenu&&!dialog.open&&!state.ended);
+  guideButton.hidden=inMenu||dialog.open||state.ended;
+  destination.hidden=inMenu||dialog.open||state.ended||renderer.xr.isPresenting;
+  if(!destination.hidden){
+    camera.updateMatrixWorld();markerPosition.set(activeTarget.x,2.2,activeTarget.z).project(camera);
+    if(markerPosition.z>1){
+      const local=camera.worldToLocal(new T.Vector3(activeTarget.x,2.2,activeTarget.z));
+      markerPosition.x=local.x>=0?2:-2;markerPosition.y=0;
+    }
+    destination.style.left=`${Math.max(5,Math.min(95,(markerPosition.x*.5+.5)*100))}%`;
+    destination.style.top=`${Math.max(16,Math.min(84,(-markerPosition.y*.5+.5)*100))}%`;
+    destination.querySelector('small').textContent=activeTarget.name;
+  }
   if (renderer.xr.isPresenting) {
-    glove.visible = false;
+    glove.visible = false;leftGlove.visible=false;
     xr.update(dt);
     renderer.render(scene, camera);
     return;
   }
-  glove.visible = true;
+  glove.visible = true;leftGlove.visible=true;
   gloveReach = Math.max(0, gloveReach - dt * 2.8);
-  glove.position.set(0.30 - gloveReach * 0.12, -0.32 + gloveReach * 0.08, -0.52 - gloveReach * 0.17);
+  const armX=innerWidth<700?.17:.25;
+  glove.position.set(armX - gloveReach*.08,-.22+gloveReach*.06,-.48-gloveReach*.15);
+  leftGlove.position.set(-armX,-.22,-.48);leftGlove.rotation.x=-.22;
   glove.rotation.x = -0.28 - gloveReach * 0.6;
   if (inMenu) {
     if (preferences.moonSpin) menuMoon.rotation.y += dt * 0.20;
@@ -665,18 +679,7 @@ function frame(time) {
   const s = stations[Math.min(state.day, 6)],
     distance = Math.hypot(s.x - player.x, s.z - player.z);
   near = distance < 3.4;
-  const bearing = Math.atan2(s.x - player.x, -(s.z - player.z)),
-    relative = Math.atan2(Math.sin(bearing + yaw), Math.cos(bearing + yaw));
-  const direction =
-    Math.abs(relative) < 0.35
-      ? "Ahead"
-      : Math.abs(relative) > 2.5
-        ? "Behind you"
-        : relative > 0
-          ? "To your right"
-          : "To your left";
-  document.getElementById("objective").innerHTML =
-    `<span class="kicker">${state.day < 2 ? "SECURE THE LANDER" : state.day < 5 ? "KEEP THE CREW SAFE" : "BRING OUR WORK HOME"}</span><h2>${state.ended ? "Mission complete" : briefings[state.day].title}</h2><p>${state.ended ? "Open your mission report." : `Go to ${s.name} · ${Math.round(distance)} m · ${direction}`}</p><p class="objective-hint">${near ? "Press E or Interact to decide." : "Walk to the amber beacon or use Remote assist."}</p>`;
+  document.getElementById("objective").innerHTML = `<span class="kicker">${state.ended?'MISSION COMPLETE':'CURRENT TASK'}</span><h2>${state.ended?'Open your mission report.':briefings[state.day].title}</h2>`;
   document.getElementById("prompt").textContent = state.ended
     ? "Mission complete · E to view report"
     : near
