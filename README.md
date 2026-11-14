@@ -39,8 +39,8 @@ what it does to the ship.
 | --- | --- | --- |
 | Move | WASD or arrow keys (Shift to run) | Joystick |
 | Look | Click, then move the mouse (Esc to pause) | Drag |
-| Use a terminal | E | Use button |
-| Jump (a slow Moon hop) | Space | Jump button |
+| Use a terminal | E | "Use terminal" button |
+| Jump (a slow Moon hop) | Space | "Jump" button |
 
 The game also supports the Meta Quest browser (WebXR).
 
