@@ -27,7 +27,7 @@ try {
   const saved = JSON.parse(
     localStorage.getItem("lunar-frontier-settings") || "{}",
   );
-  if (typeof saved.moonSpin === "boolean") preferences.moonSpin = saved.moonSpin;
+  // Rotation starts on each visit; the title control can pause it for this session.
   if (["low", "high"].includes(saved.quality))
     preferences.quality = saved.quality;
   if (Number.isFinite(saved.sensitivity))
@@ -57,7 +57,7 @@ scene.background = new T.Color(0x090e1b);
 scene.fog = new T.FogExp2(0x3f455c, 0.0015);
 const camera = new T.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 650);
 const menuScene = new T.Scene();
-menuScene.background = new T.Color(0x201c38);
+menuScene.background = new T.Color(0x111821);
 const menuCamera = new T.PerspectiveCamera(
   42,
   innerWidth / innerHeight,
@@ -747,7 +747,7 @@ function frame(time) {
   glove.position.set(0.30 - gloveReach * 0.12, -0.32 + gloveReach * 0.08, -0.52 - gloveReach * 0.17);
   glove.rotation.x = -0.28 - gloveReach * 0.6;
   if (inMenu) {
-    if (preferences.moonSpin) menuMoon.rotation.y += dt * 0.14;
+    if (preferences.moonSpin) menuMoon.rotation.y += dt * 0.20;
     renderer.render(menuScene, menuCamera);
     return;
   }
