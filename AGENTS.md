@@ -21,7 +21,8 @@ should help a child understand a real trade-off, not just look cool.
 | Mission days, choices, consequences, scoring | `dist/engine.js`, `tests/engine.test.js` |
 | Movement, mouse/touch look, jumping, collision | `dist/controls.js`, touch joystick in `dist/presentation.js` |
 | Dialogs, HUD, menus, settings | `dist/hud.js`, `dist/index.html`, `dist/*.css` |
-| 3D scene, lighting, terrain, materials | `dist/scene.js`, `dist/surfaces.js` |
+| Renderer, lighting, materials, gloves, beacon | `dist/scene.js`, `dist/surfaces.js` |
+| Moon terrain, rocks, sky, Earth, title-screen Moon | `dist/landscape.js` |
 | Spacecraft layout and stations | `dist/ship.js` |
 | Hands-on mini-games | `dist/tasks.js` |
 | Nora's hints | `dist/companion.js` |
@@ -32,6 +33,8 @@ should help a child understand a real trade-off, not just look cool.
 ## Rules
 1. Change only what the prompt asks for. Keep each change small and focused on one area.
 2. Never minify or squash code onto one line. Use readable formatting and short comments.
+   The repo's `.prettierrc.json` (100 columns) is the formatting standard. Don't reformat
+   files you aren't otherwise changing, because that causes merge conflicts for teammates.
 3. Never put the whole game back into one file. Put new code in the file that owns that area.
 4. If you change `dist/engine.js`, run `node tests/engine.test.js` and make it pass.
    Update the test only when the design itself changed on purpose, and say so.

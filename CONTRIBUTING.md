@@ -69,6 +69,7 @@ git push                     # 5. the live site updates in about a minute
 | Movement and controls | `dist/controls.js` (touch joystick: `dist/presentation.js`) |
 | Screens, dialogs, HUD | `dist/hud.js`, `dist/index.html`, `dist/*.css` |
 | 3D graphics and lighting | `dist/scene.js`, `dist/surfaces.js` |
+| Moon terrain, sky, title Moon | `dist/landscape.js` |
 | Spacecraft rooms and stations | `dist/ship.js` |
 | Repair mini-games | `dist/tasks.js` |
 | Nora's hints | `dist/companion.js` |
