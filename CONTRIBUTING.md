@@ -57,7 +57,7 @@ node tests/engine.test.js
 git add -A
 git commit -m "Make the jump floatier"
 git pull --rebase            # 4. grab anything pushed while you worked
-git push                     # 5. the live site updates in about a minute
+git push                     # 5. then redeploy the site with Codex (see section 5)
 ```
 
 **Claim your area before you start.** Write it in the team chat, e.g.
@@ -88,12 +88,15 @@ If you get stuck, **don't force-push.** Ask a teammate or your teacher.
 
 ## 5. The live site
 
-- Every push to `main` runs the **Deploy game** workflow (GitHub → Actions tab).
-  It checks the JavaScript and the mission logic test, then publishes `dist/` to
-  **https://nawafalfardan6-design.github.io/lunar-frontier/**.
-- A red ❌ in the Actions tab means a check failed and the site was **not**
-  updated. Open the failed run to read why, fix it, and push again.
-- One-time setup for the repo owner: Settings → Pages → Source: **GitHub Actions**.
+- The game is published with Codex hosting from the `dist/` folder (settings in
+  `.openai/hosting.json`):
+  **https://lunar-frontier-mission-nawaf.cleverhornbill2.chatgpt.site/**
+- **Pushing to GitHub does not update the site by itself.** To publish, the person
+  whose ChatGPT account owns the hosting asks Codex:
+  > Pull the latest `main` from GitHub and redeploy the site from `dist/`.
+- Only redeploy after the **Check game** workflow on GitHub shows a green ✅ for the
+  latest commit (GitHub → Actions tab). A red ❌ means the JavaScript or the mission
+  logic test is broken. Open the run to see why, fix it, and push again.
 
 ## 6. Before you push: checklist
 

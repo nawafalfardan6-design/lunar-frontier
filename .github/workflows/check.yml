@@ -1,0 +1,23 @@
+# Runs on every push and pull request: checks JavaScript syntax and the mission logic.
+# A red ❌ on GitHub means something is broken. Open the run to see which check failed.
+name: Check game
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          for f in dist/*.js; do
+            node --input-type=module --check < "$f" || exit 1
+          done
+      - name: Test mission logic
+        run: node tests/engine.test.js

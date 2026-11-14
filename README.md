@@ -6,7 +6,7 @@ challenge. You command **Selene**, a spacecraft landed on the Moon with four cre
 seven days. Each day you walk to a station, make one engineering decision, and see
 what it does to the ship.
 
-**Play it:** https://nawafalfardan6-design.github.io/lunar-frontier/
+**Play it:** https://lunar-frontier-mission-nawaf.cleverhornbill2.chatgpt.site/
 (a simpler 2D version is at `/mission.html`)
 
 ## How the mission works
@@ -66,7 +66,9 @@ Check the mission logic with:
 node tests/engine.test.js
 ```
 
-Every push to `main` runs this test and then publishes `dist/` to GitHub Pages.
+Every push runs this test on GitHub (the **Check game** workflow). The live site is
+published from `dist/` with Codex hosting (`.openai/hosting.json`). See
+CONTRIBUTING.md for how to redeploy.
 
 Three.js r170 is vendored in `dist/vendor/` (MIT license). The procedural textures
 are artistic approximations, not NASA imagery.
