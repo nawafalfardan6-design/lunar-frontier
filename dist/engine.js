@@ -7,7 +7,8 @@ const days = [
 {title:'A message to Earth',story:'A planned communications window is opening. Send your research or use the energy to service the outpost.',why:'Radio equipment uses electricity. Mission planners schedule communication and maintenance around available energy and crew time.',choices:[['Transmit findings','Spend 16 power. Complete research if you collected it.',-16,0,0,'transmit'],['Service essential systems','Spend 8 power. Restore life support.',-8,20,5,'repair']]},
 {title:'Bring the crew home',story:'It is the final day. Choose a careful closeout or one last experiment before the mission ends.',why:'Keeping a reserve helps a crew respond to unexpected problems. A successful mission balances exploration with a safe finish.',choices:[['Complete safety checks','Spend 5 power. Improve readiness.',-5,10,10,'closeout'],['Finish one last experiment','Spend 25 power. Add research to the mission log.',-25,0,0,'research']]}
 ];
-function initial(){return {day:0,power:85,life:75,safety:70,flags:[],log:[],ended:false};}
+days[6].choices[1] = ['Complete the final downlink','Spend 20 power. Send any research still waiting.',-20,0,0,'transmit'];
+function initial(){return {day:0,power:90,life:75,safety:70,flags:[],log:[],ended:false};}
 function decide(state,index){
  if(state.ended || !days[state.day]?.choices[index]) return state;
  const s=JSON.parse(JSON.stringify(state)), d=days[s.day], c=d.choices[index], notes=[];
@@ -20,7 +21,7 @@ function decide(state,index){
  if(s.power<15){s.life-=18;s.safety-=10;notes.push('Low battery strained essential systems. Life support −18, safety −10.');}
  if(s.day<6){s.power+=14;notes.push('Scheduled solar charging restored 14 power.');}
  for(const k of ['power','life','safety'])s[k]=Math.max(0,Math.min(100,s[k]));
- s.log.push({day:s.day+1,title:d.title,choice:c[0],notes,why:d.why});s.day++;
+ s.log.push({day:s.day+1,title:d.title,choice:c[0],choiceIndex:index,before:{power:state.power,life:state.life,safety:state.safety},after:{power:s.power,life:s.life,safety:s.safety},notes,why:d.why});s.day++;
  s.ended=s.day===7||s.life===0||s.safety===0;
  return s;
 }

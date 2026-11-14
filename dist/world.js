@@ -1,3 +1,10 @@
+import {createGuidance} from './navigation.js';
+import {surfaceTexture} from './surfaces.js';
+import {startTask} from './tasks.js';
+import {buildShip, shipStations} from './ship.js';
+import {opening, companionReaction, createCompanion} from './companion.js';
+import {briefings, enableTouchStick} from './presentation.js';
+import {saveMission, loadMission, forecast, resourceHistory} from './mission-session.js';
 import * as T from "./vendor/three.module.js";
 import { createXR, astronautGlove } from './xr.js';
 const canvas = document.getElementById("world"),
@@ -11,12 +18,13 @@ let state = initial(),
   velocity = 0,
   near = false;
 const keys = new Set(),
-  player = new T.Vector3(0, 1.8, 13),
+  player = new T.Vector3(0, 1.8, 2),
   obstacles = [];
 let inMenu = true;
 let missionStarted = false;
 const preferences = {
   quality: "high",
+  moonSpin: true,
   sensitivity: 1,
   reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
 };
@@ -24,6 +32,7 @@ try {
   const saved = JSON.parse(
     localStorage.getItem("lunar-frontier-settings") || "{}",
   );
+  // Rotation starts on each visit; the title control can pause it for this session.
   if (["low", "high"].includes(saved.quality))
     preferences.quality = saved.quality;
   if (Number.isFinite(saved.sensitivity))
@@ -49,11 +58,11 @@ renderer.shadowMap.type = T.PCFSoftShadowMap;
 renderer.toneMapping = T.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 const scene = new T.Scene();
-scene.background = new T.Color(0x201c38);
-scene.fog = new T.FogExp2(0x514366, 0.0025);
+scene.background = new T.Color(0x010204);
+// No atmospheric haze on the Moon.
 const camera = new T.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 650);
 const menuScene = new T.Scene();
-menuScene.background = new T.Color(0x201c38);
+menuScene.background = new T.Color(0x05080c);
 const menuCamera = new T.PerspectiveCamera(
   42,
   innerWidth / innerHeight,
@@ -61,11 +70,11 @@ const menuCamera = new T.PerspectiveCamera(
   600,
 );
 menuCamera.position.set(0, 0, 16);
-menuScene.add(new T.AmbientLight(0x9a86bc, 0.7));
-const moonlight = new T.DirectionalLight(0xffdeb4, 3.4);
+menuScene.add(new T.AmbientLight(0xb8c8de, 0.22));
+const moonlight = new T.DirectionalLight(0xffffff, 3.1);
 moonlight.position.set(-4, 5, 8);
 menuScene.add(moonlight);
-const moonGeometry = new T.SphereGeometry(3.6, 96, 64);
+const moonGeometry = new T.SphereGeometry(3.6, 160, 96);
 const moonVertices = moonGeometry.attributes.position;
 const craterCenters = [];
 for (let i = 0; i < 32; i++) {
@@ -88,9 +97,9 @@ for (let i = 0; i < moonVertices.count; i++) {
   let depth = 0;
   for (const crater of craterCenters) {
     const distance = direction.distanceTo(crater.center) / crater.radius;
-    if (distance < 1) depth -= 0.13 * (1 - distance * distance);
+    if (distance < 1) depth -= 0.035 * (1 - distance * distance);
     if (distance >= 0.85 && distance < 1.2)
-      depth += 0.045 * Math.sin(((distance - 0.85) / 0.35) * Math.PI);
+      depth += 0.012 * Math.sin(((distance - 0.85) / 0.35) * Math.PI);
   }
   const variation =
     Math.sin(direction.x * 9 + direction.z * 3) *
@@ -103,28 +112,30 @@ for (let i = 0; i < moonVertices.count; i++) {
     direction.z * (3.6 + depth),
   );
   const color = new T.Color().setHSL(
-    0.09,
-    0.12,
+    0,
+    0,
     0.57 + variation + depth * 0.8,
   );
   moonColors.push(color.r, color.g, color.b);
 }
 moonGeometry.setAttribute("color", new T.Float32BufferAttribute(moonColors, 3));
 moonGeometry.computeVertexNormals();
+const lunarTexture=surfaceTexture("moon");
 const menuMoon = new T.Mesh(
   moonGeometry,
   new T.MeshStandardMaterial({
     vertexColors: true,
+    map:lunarTexture, bumpMap:lunarTexture, bumpScale:0.035,
     roughness: 1,
-    flatShading: true,
+    flatShading: false,
   }),
 );
 menuMoon.position.x = 3.2;
 menuScene.add(menuMoon);
 camera.rotation.order = "YXZ";
-scene.add(new T.HemisphereLight(0xb9b5ed, 0x594c65, 2.1));
-const sun = new T.DirectionalLight(0xffd5a1, 2.6);
-sun.position.set(-35, 45, 18);
+scene.add(new T.HemisphereLight(0xdde6ef, 0x272b30, 1.2));
+const sun = new T.DirectionalLight(0xffffff, 2.4);
+sun.position.set(17, 10, -41);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, {
@@ -136,6 +147,7 @@ Object.assign(sun.shadow.camera, {
 });
 sun.shadow.bias = -0.001;
 scene.add(sun);
+const panelTexture=surfaceTexture("panel");
 const materials = new Map();
 function mat(color) {
   if (!materials.has(color))
@@ -143,9 +155,10 @@ function mat(color) {
       color,
       new T.MeshStandardMaterial({
         color,
-        roughness: 1,
-        metalness: 0,
-        flatShading: true,
+        map:panelTexture, bumpMap:panelTexture, bumpScale:0.006,
+        roughness: 0.65,
+        metalness: 0.22,
+        flatShading: false,
       }),
     );
   return materials.get(color);
@@ -193,19 +206,19 @@ function random() {
   seed = (seed * 1664525 + 1013904223) >>> 0;
   return seed / 4294967296;
 }
-const terrain = new T.PlaneGeometry(500, 500, 90, 90);
+const terrain = new T.PlaneGeometry(500, 500, 150, 150);
 terrain.rotateX(-Math.PI / 2);
 const positions = terrain.attributes.position;
 for (let i = 0; i < positions.count; i++) {
   const x = positions.getX(i),
     z = positions.getZ(i);
-  positions.setY(i, Math.hypot(x, z) < 60 ? -0.06 : (random() - 0.4) * 2.5);
+  positions.setY(i, Math.hypot(x, z) < 60 ? -0.06 : Math.sin(x*.041)*Math.cos(z*.037)*1.2+Math.sin(x*.14+z*.09)*.35);
 }
 terrain.computeVertexNormals();
 const ground = terrain.toNonIndexed();
 const groundColors = [];
 for (let i = 0; i < ground.attributes.position.count; i += 3) {
-  const shade = new T.Color().setHSL(0.72, 0.1, 0.42 + random() * 0.075);
+  const shade = new T.Color().setHSL(0, 0, 0.43 + random() * 0.012);
   for (let vertex = 0; vertex < 3; vertex++)
     groundColors.push(shade.r, shade.g, shade.b);
 }
@@ -215,7 +228,7 @@ mesh(
   new T.MeshStandardMaterial({
     vertexColors: true,
     roughness: 1,
-    flatShading: true,
+    flatShading: false,
   }),
   0,
   0,
@@ -227,8 +240,8 @@ for (let i = 0; i < 150; i++) {
   if (Math.hypot(x, z) < 45) continue;
   const size = 0.4 + random() * 3;
   const rock = mesh(
-    new T.DodecahedronGeometry(size),
-    mat(0x80728d),
+    new T.IcosahedronGeometry(size, 2),
+    new T.MeshStandardMaterial({color:0x777779,roughness:1}),
     x,
     size * 0.2,
     z,
@@ -236,192 +249,89 @@ for (let i = 0; i < 150; i++) {
   rock.scale.y = 0.55;
   rock.rotation.set(random(), random() * 6, random());
 }
-for (let i = 0; i < 22; i++) {
-  const a = (i / 22) * Math.PI * 2;
-  mesh(
-    new T.ConeGeometry(25 + random() * 20, 20 + random() * 40, 5),
-    mat(0x796287),
-    Math.sin(a) * 205,
-    0,
-    Math.cos(a) * 205,
-  );
+const ridgeMaterial=new T.MeshStandardMaterial({color:0x66676a,roughness:1});
+for(let i=0;i<30;i++) {
+ const a=i/30*Math.PI*2, geo=new T.SphereGeometry(1,40,24), vertices=geo.attributes.position;
+ for(let j=0;j<vertices.count;j++){
+  const x=vertices.getX(j),y=vertices.getY(j),z=vertices.getZ(j);
+  const erosion=1+.12*Math.sin(x*13+z*7+i)+.07*Math.sin(z*21-y*9);
+  vertices.setXYZ(j,x*erosion,y*(.8+.15*Math.sin(x*8+z*11+i)),z*erosion);
+ }
+ geo.computeVertexNormals();
+ const hill=mesh(geo,ridgeMaterial,Math.sin(a)*210,-10,Math.cos(a)*210);
+ hill.scale.set(40+random()*30,15+random()*15,35+random()*25);
 }
-const stars = new Float32Array(5400);
+const sky = new T.Group();scene.add(sky);
+const skyAnchor=new T.Vector3();
+const stars = new Float32Array(12000);
 for (let i = 0; i < stars.length; i += 3) {
   const a = random() * 6.28,
     h = random(),
-    r = 340;
+    r = 520;
   stars[i] = Math.cos(a) * Math.sqrt(1 - h * h) * r;
   stars[i + 1] = h * r;
   stars[i + 2] = Math.sin(a) * Math.sqrt(1 - h * h) * r;
 }
 const starGeo = new T.BufferGeometry();
 starGeo.setAttribute("position", new T.BufferAttribute(stars, 3));
-scene.add(
-  new T.Points(
-    starGeo,
-    new T.PointsMaterial({ color: 0xddeeff, size: 0.55, fog: false }),
-  ),
-);
-menuScene.add(
-  new T.Points(starGeo, new T.PointsMaterial({ color: 0xf1ddbd, size: 0.6 })),
-);
-const earth = mesh(
-  new T.SphereGeometry(9, 32, 24),
-  mat(0x3c85bb),
-  75,
-  65,
-  -180,
-);
-for (let i = 0; i < 15; i++) {
-  const cloud = mesh(
-    new T.SphereGeometry(1 + random() * 2, 12, 8),
-    mat(i % 3 ? 0xd1e6e9 : 0x7eae95),
-    0,
-    0,
-    0,
-    earth,
-  );
-  const a = random() * 6.28,
-    b = random() * 2.4;
-  cloud.position.set(
-    Math.sin(a) * Math.sin(b) * 8.8,
-    Math.cos(b) * 8.8,
-    Math.cos(a) * Math.sin(b) * 8.8,
-  );
-  cloud.scale.y = 0.5;
+const starfield=new T.Points(starGeo,new T.PointsMaterial({color:0xe6f0ff,size:1.8,sizeAttenuation:false,depthWrite:false,toneMapped:false}));starfield.renderOrder=-1000;sky.add(starfield);
+const brightStarGeo=new T.BufferGeometry();brightStarGeo.setAttribute('position',new T.BufferAttribute(stars.slice(0,540),3));
+const brightStars=new T.Points(brightStarGeo,new T.PointsMaterial({color:0xffffff,size:2.8,sizeAttenuation:false,depthWrite:false,toneMapped:false}));brightStars.renderOrder=-1000;sky.add(brightStars);
+// A full backdrop keeps stars visible at both desktop and phone aspect ratios.
+const titleStars = new Float32Array(1500);
+for (let i=0;i<titleStars.length;i+=3) {
+  titleStars[i]=(random()-0.5)*95;
+  titleStars[i+1]=(random()-0.5)*50;
+  titleStars[i+2]=-35-random()*15;
 }
-function habitat(x, z, name, color, plants = false) {
-  const roof = mesh(
-    new T.SphereGeometry(5.5, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2),
-    mat(0xf0ddbb),
-    x,
-    5.3,
-    z,
-  );
-  roof.scale.set(1, 0.4, 0.8);
-  box(12, 0.5, 10, 0x37334b, x, 0.25, z);
-  box(11, 4.7, 8.5, 0xe1d6bf, x, 2.7, z);
-  box(11.5, 0.4, 9, color, x, 5.15, z);
-  for (const dx of [-3.5, 3.5]) {
-    box(2.7, 1.7, 0.16, 0x122c3f, x + dx, 3.2, z + 4.3);
-    box(2.3, 1.3, 0.18, plants ? 0x448c76 : 0x73ada7, x + dx, 3.2, z + 4.4);
-  }
-  box(2.1, 3.5, 0.35, 0x35334b, x, 2, z + 4.5);
-  for (const dx of [-1.15, 1.15])
-    box(0.12, 3.3, 0.4, color, x + dx, 2, z + 4.6);
-  sign(name, x, 5.9, z + 4.5);
-  if (plants) {
-    for (let i = -2; i <= 2; i++) {
-      box(0.8, 0.6, 0.8, 0x476d59, x + i * 1.7, 5.7, z);
-      mesh(new T.ConeGeometry(0.6, 1.8, 7), mat(0x89bf67), x + i * 1.7, 6.6, z);
-    }
-  } else
-    for (const dx of [-4, 4])
-      mesh(
-        new T.CylinderGeometry(0.65, 0.65, 5, 12),
-        mat(0x889ca9),
-        x + dx,
-        2.7,
-        z - 5,
-      );
-  obstacle(x, z, 12, 10);
-}
-habitat(0, -12, "LIFE SUPPORT", 0x8edac8);
-habitat(-22, -8, "CREW SHELTER", 0xf3c477);
-habitat(22, -10, "GREENHOUSE", 0xa8d079, true);
-habitat(0, 32, "MISSION CONTROL", 0x9bb8e8);
-for (let i = 0; i < 4; i++) {
-  const x = -26 + (i % 2) * 8,
-    z = 17 + Math.floor(i / 2) * 8;
-  box(0.4, 2.3, 0.4, 0xadc0cc, x, 1.1, z);
-  const panel = box(6.5, 0.15, 4.5, 0x173a6e, x, 2.5, z);
-  panel.rotation.x = -0.35;
-  for (let j = -2; j <= 2; j++) {
-    const strip = box(0.04, 0.18, 4.4, 0x7c9fc8, x + j * 1.1, 2.5, z);
-    strip.rotation.x = -0.35;
-  }
-  obstacle(x, z, 6.5, 4.5);
-}
-box(4, 1.4, 3, 0xc3cbd0, 24, 0.7, 11);
-obstacle(24, 11, 4, 3);
-mesh(new T.CylinderGeometry(0.6, 0.9, 2, 12), mat(0xe6b76a), 24, 2.3, 11);
-sign("SCIENCE STATION", 24, 4.5, 11);
-mesh(new T.CylinderGeometry(0.5, 1, 5, 12), mat(0xb6c3cd), 21, 2.5, 29);
-const dish = mesh(
-  new T.SphereGeometry(4, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2),
-  new T.MeshStandardMaterial({ color: 0xd4dce1, side: T.DoubleSide }),
-  21,
-  6,
-  29,
-);
-dish.rotation.x = Math.PI + 0.5;
-box(0.12, 4, 0.12, 0x819cae, 21, 6.5, 29);
-obstacle(21, 29, 7, 7);
-sign("COMMUNICATIONS", 21, 10, 29);
+const titleStarGeometry=new T.BufferGeometry();
+titleStarGeometry.setAttribute('position',new T.BufferAttribute(titleStars,3));
+menuScene.add(new T.Points(titleStarGeometry,new T.PointsMaterial({color:0xd8e9f7,size:1.6,sizeAttenuation:false,transparent:true,opacity:0.85})));
+const earthCanvas=document.createElement('canvas');earthCanvas.width=1024;earthCanvas.height=512;
+const earthCtx=earthCanvas.getContext('2d');earthCtx.fillStyle='#155c96';earthCtx.fillRect(0,0,1024,512);
+// Approximate continent silhouettes and cloud bands on a spherical globe.
+const continents=[[[130,100],[250,65],[330,130],[260,210],[220,250],[160,180]],[[270,240],[350,270],[370,330],[310,440],[280,370]],[[470,150],[550,160],[600,250],[555,340],[500,270]],[[510,115],[610,70],[800,100],[880,190],[740,240],[650,180]],[[800,340],[885,315],[920,375],[850,400]]];
+earthCtx.fillStyle='#789071';for(const points of continents){earthCtx.beginPath();points.forEach(([x,y],i)=>i?earthCtx.lineTo(x,y):earthCtx.moveTo(x,y));earthCtx.closePath();earthCtx.fill();}
+for(let i=0;i<220;i++){earthCtx.fillStyle=`rgba(244,249,255,${.12+random()*.25})`;earthCtx.beginPath();earthCtx.ellipse(random()*1024,random()*512,15+random()*65,2+random()*10,-.3,0,Math.PI*2);earthCtx.fill();}
+const earthTexture=new T.CanvasTexture(earthCanvas);earthTexture.colorSpace=T.SRGBColorSpace;
+const earth=mesh(new T.SphereGeometry(14,64,48),new T.MeshStandardMaterial({map:earthTexture,roughness:.8,emissiveMap:earthTexture,emissive:0xffffff,emissiveIntensity:.25,depthWrite:false}),-90,140,-440);
+earth.rotation.y=-1.6;
+const atmosphere=mesh(new T.SphereGeometry(14.25,64,48),new T.MeshBasicMaterial({color:0x6dbfff,transparent:true,opacity:.12,side:T.BackSide,depthWrite:false}),0,0,0,earth);
+sky.add(earth);earth.renderOrder=-999;earth.castShadow=false;earth.receiveShadow=false;atmosphere.renderOrder=-998;
+// Sky objects follow the viewer: no nearby-object parallax or motion through terrain.
+const solarDisc=new T.Mesh(new T.SphereGeometry(2.3,32,24),new T.MeshBasicMaterial({color:0xffffff,toneMapped:false,depthWrite:false}));solarDisc.position.set(170,100,-410);solarDisc.renderOrder=-999;sky.add(solarDisc);
+const haloCanvas=document.createElement('canvas');haloCanvas.width=haloCanvas.height=128;const hc=haloCanvas.getContext('2d');const hg=hc.createRadialGradient(64,64,2,64,64,64);hg.addColorStop(0,'rgba(255,250,225,.85)');hg.addColorStop(.15,'rgba(255,244,214,.3)');hg.addColorStop(1,'rgba(255,244,214,0)');hc.fillStyle=hg;hc.fillRect(0,0,128,128);
+const sunHalo=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(haloCanvas),transparent:true,depthWrite:false,toneMapped:false,blending:T.AdditiveBlending}));sunHalo.position.copy(solarDisc.position);sunHalo.scale.set(25,25,1);sunHalo.renderOrder=-998;sky.add(sunHalo);
+const animateShip=buildShip(scene,box,mesh,mat,obstacle);
 function astronaut(x, z, color) {
   const g = new T.Group();
+  g.userData.arms=[];
   g.position.set(x, 0, z);
   scene.add(g);
-  box(0.7, 0.8, 0.5, 0xe2e7e9, 0, 1.15, 0, g);
+  mesh(new T.CapsuleGeometry(0.32,0.4,8,16),mat(0xe2e7e9),0,1.2,0,g);
   box(0.55, 0.65, 0.4, 0x6c8492, 0, 1.2, -0.4, g);
-  mesh(new T.SphereGeometry(0.4, 16, 12), mat(0xe9e8dc), 0, 1.9, 0, g);
+  mesh(new T.SphereGeometry(0.36, 32, 24), mat(0xe9e8dc), 0, 1.9, 0, g);
   mesh(
-    new T.SphereGeometry(0.32, 16, 12),
-    mat(0x322c24),
+    new T.SphereGeometry(0.30, 32, 24),
+    new T.MeshStandardMaterial({color:0x252a32,metalness:0.8,roughness:0.13}),
     0,
     1.91,
     0.2,
     g,
   ).scale.z = 0.6;
   for (const side of [-1, 1]) {
-    box(0.25, 0.7, 0.28, 0xd8dfe3, side * 0.23, 0.4, 0, g);
-    box(0.23, 0.8, 0.25, 0xd8dfe3, side * 0.53, 1.1, 0, g);
+    mesh(new T.CapsuleGeometry(0.13,0.48,6,12),mat(0xd8dfe3),side*0.2,0.42,0,g);
+    const arm=mesh(new T.CapsuleGeometry(0.12,0.5,6,12),mat(0xd8dfe3),side*0.45,1.1,0,g);g.userData.arms.push(arm);
   }
   box(0.5, 0.16, 0.53, color, 0, 1.2, 0, g);
   return g;
 }
-const crew = [
-  astronaut(-4, -5, 0xffbd65),
-  astronaut(17, -3, 0x99d88c),
-  astronaut(16, 23, 0x86c3df),
-];
-box(5, 0.04, 47, 0x8f8297, 0, 0, 10);
-box(49, 0.04, 4, 0x8f8297, 0, 0.01, 3);
-for (let i = -3; i <= 6; i++)
-  for (const side of [-1, 1]) {
-    box(0.16, 0.7, 0.16, 0x394a57, side * 3, 0.35, i * 5);
-    mesh(
-      new T.SphereGeometry(0.12, 6, 6),
-      new T.MeshBasicMaterial({ color: 0xc3e9ea }),
-      side * 3,
-      0.75,
-      i * 5,
-    );
-  }
-const stations = [
-  { name: "Life support", x: 0, z: -5.6 },
-  { name: "Crew shelter", x: -22, z: -1.6 },
-  { name: "Science station", x: 24, z: 14 },
-  { name: "Radiation shelter", x: -22, z: -1.6 },
-  { name: "Greenhouse", x: 22, z: -3.6 },
-  { name: "Communications", x: 21, z: 34 },
-  { name: "Mission control", x: 0, z: 38.4 },
-];
-for (const i of [0, 1, 2, 4, 5, 6]) {
-  const s = stations[i];
-  box(0.8, 1.1, 0.6, 0x223c4f, s.x, 0.55, s.z);
-  const screen = box(0.85, 0.65, 0.12, 0x7ed5c5, s.x, 1.35, s.z + 0.22);
-  screen.material = new T.MeshStandardMaterial({
-    color: 0x72d7c2,
-    emissive: 0x328f7a,
-    emissiveIntensity: 0.8,
-  });
-}
+const crew = [astronaut(-6,-10,0xffbd65),astronaut(6,10,0x99d88c),astronaut(6,2,0x86c3df)];
+const stations = shipStations;
 const beacon = new T.Group();
 scene.add(beacon);
 const ring = mesh(
-  new T.TorusGeometry(1.4, 0.055, 8, 48),
+  new T.TorusGeometry(0.9, 0.055, 8, 48),
   new T.MeshBasicMaterial({ color: 0xffc679 }),
   0,
   0.09,
@@ -438,6 +348,11 @@ const arrow = mesh(
   beacon,
 );
 arrow.rotation.z = Math.PI;
+const guidance=createGuidance(scene,clearAt);
+const guideButton=document.createElement('button');guideButton.id='show-route';guideButton.textContent='Show trail';guideButton.onclick=()=>guidance.show();document.body.append(guideButton);
+const destination=document.createElement('div');destination.id='destination-marker';destination.innerHTML='<span>◇</span><small></small>';document.body.append(destination);
+const markerPosition=new T.Vector3();
+
 function hud() {
   document.getElementById("hud").innerHTML =
     `<div class="kicker">DAY ${Math.min(state.day + 1, 7)} / 7 · CREW 04</div>` +
@@ -466,6 +381,7 @@ function resume() {
   missionStarted = true;
   document.body.classList.remove("title-screen");
   playing = true;
+  guidance.show();
 }
 function applyPreferences() {
   renderer.setPixelRatio(
@@ -486,9 +402,14 @@ function titleScreen() {
   keys.clear();
   dialog.close();
   document.body.classList.add("title-screen");
-  entry.innerHTML = `<div class="entry-panel"><span class="entry-eyebrow">A LITTLE OUTPOST. A BIG ADVENTURE.</span><h1>LUNAR<br><span>FRONTIER</span></h1><p class="entry-tagline">Your mission. Your crew.<br>Your decisions.</p><nav aria-label="Main menu"><button id="start-game">${missionStarted ? "CONTINUE EXPEDITION" : "START EXPEDITION"} <span>↗</span></button><button id="settings">SETTINGS <span>⚙</span></button><button id="how-to">HOW TO PLAY <span>?</span></button></nav><p class="menu-note">4 astronauts · 7 days · One small step at a time</p></div><div class="moon-caption">THE MOON<span>YOUR NEXT FRONTIER</span></div><div class="entry-footer">LUNAR FRONTIER <span>A SPACE EXPLORATION GAME</span></div>`;
-  document.getElementById("start-game").onclick = resume;
+  entry.innerHTML = `<div class="entry-panel"><h1>LUNAR<br><span>FRONTIER</span></h1><nav aria-label="Main menu"><button id="start-game">${missionStarted ? "CONTINUE EXPEDITION" : "START EXPEDITION"} <span>↗</span></button><button id="settings">SETTINGS <span>⚙</span></button><button id="how-to">HOW TO PLAY <span>?</span></button></nav></div><div class="moon-caption"><button id="moon-spin">${preferences.moonSpin ? "Pause rotation" : "Rotate Moon"}</button></div>`;
+  document.getElementById("start-game").onclick = () => {
+    if (missionStarted) { resume(); return; }
+    show(opening);
+    document.getElementById('launch').onclick=resume;
+  };
   document.getElementById("settings").onclick = settingsMenu;
+  document.getElementById("moon-spin").onclick = event => { preferences.moonSpin = !preferences.moonSpin; event.target.textContent = preferences.moonSpin ? "Pause rotation" : "Rotate Moon"; applyPreferences(); };
   document.getElementById("how-to").onclick = () => {
     show(
       '<span class="kicker">FIELD GUIDE</span><h2>Welcome, Commander.</h2><p>Walk to the amber marker and interact with its terminal. Each decision advances your seven-day mission and changes power, life support or crew safety.</p><p><b>WASD / arrows</b> — walk<br><b>Drag the mouse</b> — look<br><b>E</b> — use a terminal<br><b>Space</b> — jump<br><b>Shift</b> — walk faster<br><b>Escape</b> — pause</p><p>On touch screens, use the movement buttons and drag the world. Keep the crew safe, transmit research and help the crop experiment reach harvest.</p><button id="menu-back">Back to menu</button>',
@@ -498,7 +419,7 @@ function titleScreen() {
 }
 function settingsMenu() {
   show(
-    `<span class="kicker">MAKE YOURSELF AT HOME</span><h2>Settings</h2><div class="setting"><label for="quality">Graphics quality</label><select id="quality"><option value="high">High · shadows enabled</option><option value="low">Low · smoother performance</option></select></div><div class="setting"><label for="sensitivity">Look sensitivity <output id="sensitivity-value">${preferences.sensitivity.toFixed(1)}×</output></label><input id="sensitivity" type="range" min="0.4" max="2" step="0.1" value="${preferences.sensitivity}"></div><div class="setting check"><label for="motion">Reduce motion</label><input id="motion" type="checkbox" ${preferences.reducedMotion ? "checked" : ""}></div><p>Reduced motion stops the Moon rotation and decorative animations. Settings save on this device.</p><button id="settings-done">Done</button>`,
+    `<span class="kicker">MAKE YOURSELF AT HOME</span><h2>Settings</h2><div class="setting"><label for="quality">Graphics quality</label><select id="quality"><option value="high">High · shadows enabled</option><option value="low">Low · smoother performance</option></select></div><div class="setting"><label for="sensitivity">Look sensitivity <output id="sensitivity-value">${preferences.sensitivity.toFixed(1)}×</output></label><input id="sensitivity" type="range" min="0.4" max="2" step="0.1" value="${preferences.sensitivity}"></div><div class="setting check"><label for="motion">Reduce motion</label><input id="motion" type="checkbox" ${preferences.reducedMotion ? "checked" : ""}></div><p>Reduced motion stops decorative animations during the mission. Moon rotation has its own control on the title screen. Settings save on this device.</p><button id="settings-done">Done</button>`,
   );
   document.getElementById("quality").value = preferences.quality;
   document.getElementById("quality").onchange = (e) => {
@@ -519,49 +440,49 @@ function settingsMenu() {
 }
 function report() {
   show(
-    `<span class="kicker">MISSION REPORT</span><h1>${outcome(state)}</h1><p>${state.day < 7 ? "A critical system reached zero. Mission control ended the expedition early." : "You completed seven days on the lunar surface."}</p><p>Research transmitted ${state.flags.includes("sent") ? "✓" : "—"} · Crop harvested ${state.flags.includes("food") ? "✓" : "—"}</p>${state.log.map((l) => `<details><summary>Day ${l.day} · ${l.choice}</summary><p>${l.notes.join(" ")}</p></details>`).join("")}<button id="replay">New expedition</button><button class="secondary" id="explore">Keep exploring</button>`,
+    `<span class="kicker">MISSION REPORT</span><h1>${outcome(state)}</h1><p>${state.day < 7 ? "A critical system reached zero. Mission control ended the expedition early." : "You completed seven days on the lunar surface."}</p><p>Research transmitted ${state.flags.includes("sent") ? "✓" : "—"} · Crop harvested ${state.flags.includes("food") ? "✓" : "—"}</p>${resourceHistory(state)}${state.log.map((l) => `<details><summary>Day ${l.day} · ${l.choice}</summary><p>${l.notes.join(" ")}</p></details>`).join("")}<button id="replay">New expedition</button><button class="secondary" id="explore">Keep exploring</button>`,
   );
   document.getElementById("replay").onclick = () => {
     state = initial();
-    player.set(0, 1.8, 13);
+    saveMission(state);
+    player.set(0, 1.8, 2);
     yaw = pitch = jumpY = velocity = 0;
     hud();
     resume();
   };
   document.getElementById("explore").onclick = resume;
 }
-function interact() {
+function interact(direct = false) {
   if (dialog.open || !playing) return;
   gloveReach = 1;
   if (state.ended) {
     report();
     return;
   }
-  if (!near) return;
+  if (!near && !direct) return;
   const day = days[state.day];
-  show(
-    `<span class="kicker">DAY ${state.day + 1} / ${stations[state.day].name.toUpperCase()}</span><h2>${day.title}</h2><p>${day.story}</p><div class="choices">${day.choices.map((c, i) => `<button class="choice" data-choice="${i}">${c[0]}<span>${c[1]}</span></button>`).join("")}</div><p>Daily essentials use 12 power. Charging restores 14 after Days 1–6. Below 15 power, essential systems struggle.</p><button class="secondary" id="back">Back to exploring</button>`,
-  );
-  document.getElementById("back").onclick = resume;
-  modal.querySelectorAll("[data-choice]").forEach(
-    (button) =>
-      (button.onclick = () => {
-        state = decide(state, Number(button.dataset.choice));
-        hud();
-        const last = state.log.at(-1);
-        show(
-          `<span class="kicker">DAY ${last.day} COMPLETE</span><h2>${last.choice}</h2><ul>${last.notes.map((n) => `<li>${n}</li>`).join("")}</ul><aside><h3>Why this matters in real life</h3><p>${last.why}</p></aside><button id="continue">${state.ended ? "View report" : "Explore day " + (state.day + 1)} →</button>`,
-        );
-        document.getElementById("continue").onclick = state.ended
-          ? report
-          : resume;
-      }),
-  );
+  show(`<span class="kicker">DAY ${state.day+1} / ${stations[state.day].name}</span><h2>Choose your priority</h2><div class="choices">${day.choices.map((c,i)=>`<button class="choice" data-choice="${i}">${c[0]}<span>${c[1]}</span></button>`).join('')}</div><button class="secondary" id="back">Back to ship</button>`);
+  document.getElementById('back').onclick=resume;
+  modal.querySelectorAll('[data-choice]').forEach(button=>button.onclick=()=>{
+    const index=Number(button.dataset.choice);
+    startTask(state.day,index,day.choices[index][0],show,()=>{
+      state=decide(state,index);const saved=saveMission(state);hud();
+      const last=state.log.at(-1);
+      show(`<span class="kicker">SYSTEM UPDATED</span><h2>${last.choice}</h2><p>${companionReaction(state)}</p><details><summary>Resource changes & science</summary><p>${last.notes.join(' ')}</p><p>${last.why}</p></details>${saved?'':'<p>Progress could not be saved. Keep this tab open.</p>'}<button id="continue">${state.ended?'View report':'Back to ship →'}</button>`);
+      document.getElementById('continue').onclick=state.ended?report:resume;
+    },resume);
+  });
 }
-document.getElementById("interact").onclick = interact;
+
+document.getElementById("interact").onclick = () => interact();
+const stationAccess=document.createElement('button');
+stationAccess.id='station-access';
+stationAccess.textContent='Remote assist';
+stationAccess.onclick=()=>interact(true);
+document.body.append(stationAccess);
 document.getElementById("help").onclick = () => {
   show(
-    '<h2>Explore the outpost</h2><p>WASD or arrow keys move. Drag the mouse to look. E interacts near the amber marker. Space jumps. Shift moves faster. Escape pauses. Touch screens have movement buttons.</p><h3>Mission science</h3><p>Each turn represents one Earth day. Resource points, events and solar charging are simplified game rules. This is an illustrative outpost. Packaged meals sustain the crew while an existing crop experiment grows.</p><p><a href="https://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=LRO-L-DLRE-5-GCP-V1.0" target="_blank" rel="noopener">NASA Diviner</a> · <a href="https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/" target="_blank" rel="noopener">Life support</a> · <a href="https://www.nasa.gov/reference/crew-systems/" target="_blank" rel="noopener">Crew protection</a> · <a href="https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/" target="_blank" rel="noopener">Growing food</a></p><p>NASA science explanations are included. Numerical NASA measurements are still pending integration.</p><button id="return">Return to surface</button>',
+    '<h2>Explore the lander</h2><p>WASD or arrow keys move. Drag the mouse to look. E interacts near the amber marker. Space jumps. Shift moves faster. Escape pauses. Touch screens have movement buttons.</p><h3>Mission science</h3><p>Each turn represents one Earth day. Resource points, events and solar charging are simplified game rules. You are aboard the landed spacecraft Selene. Packaged meals sustain the crew while an existing crop experiment grows.</p><p><a href="https://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=LRO-L-DLRE-5-GCP-V1.0" target="_blank" rel="noopener">NASA Diviner</a> · <a href="https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/" target="_blank" rel="noopener">Life support</a> · <a href="https://www.nasa.gov/reference/crew-systems/" target="_blank" rel="noopener">Crew protection</a> · <a href="https://www.nasa.gov/exploration-research-and-technology/growing-plants-in-space/" target="_blank" rel="noopener">Growing food</a></p><p>NASA science explanations are included. Numerical NASA measurements are still pending integration.</p><button id="return">Return to ship</button>',
   );
   document.getElementById("return").onclick = resume;
 };
@@ -621,6 +542,9 @@ let drag = null;
 canvas.addEventListener("pointerdown", (e) => {
   if (dialog.open || inMenu) return;
   playing = true;
+  if (e.pointerType === 'mouse' && canvas.requestPointerLock) {
+    canvas.requestPointerLock()?.catch?.(()=>{});
+  }
   drag = { x: e.clientX, y: e.clientY };
   canvas.setPointerCapture(e.pointerId);
 });
@@ -643,10 +567,11 @@ document.querySelectorAll("[data-key]").forEach((b) => {
   for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
     b.addEventListener(type, () => keys.delete(b.dataset.key));
 });
+enableTouchStick(keys);
 function clearAt(x, z) {
   return (
-    Math.abs(x) < 55 &&
-    Math.abs(z) < 55 &&
+    Math.abs(x) < 8.4 &&
+    Math.abs(z) < 12.8 &&
     !obstacles.some((o) => Math.abs(x - o.x) < o.w && Math.abs(z - o.z) < o.d)
   );
 }
@@ -668,6 +593,12 @@ resize();
 let previous = performance.now();
 const glove = astronautGlove();
 camera.add(glove);
+const leftGlove=astronautGlove();camera.add(leftGlove);leftGlove.scale.x=-1;
+for(const hand of [glove,leftGlove]){
+ const sleeve=new T.Mesh(new T.CapsuleGeometry(.055,.22,6,16),new T.MeshStandardMaterial({color:0xdce1e7,roughness:.85}));sleeve.rotation.x=Math.PI/2;sleeve.position.set(0,-.018,.21);hand.add(sleeve);
+ hand.scale.multiplyScalar(1.35);
+}
+
 let gloveReach = 0;
 const xr = createXR({renderer, scene, camera, dialog, modal, interact, position: player,
   move(dx,dz) {
@@ -696,18 +627,46 @@ vrButton.onclick = async () => {
 function frame(time) {
   const dt = Math.min((time - previous) / 1000, 0.05);
   previous = time;
+  camera.getWorldPosition(skyAnchor);sky.position.copy(skyAnchor);
+  const motion=playing&&!dialog.open&&!inMenu&&!preferences.reducedMotion;
+  animateShip(time*.001,motion);
+  if(motion)earth.rotation.y+=dt*.003;
+  crew.forEach((person,i)=>{
+    person.position.y=motion?Math.sin(time*.0015+i)*.012:0;
+    person.userData.arms.forEach((arm,j)=>{arm.rotation.x=motion?-.15+Math.sin(time*.0008+i+j)*.14:0;arm.rotation.z=(j?1:-1)*.06;});
+  });
+  const activeTarget=stations[Math.min(state.day,6)];
+  guidance.update(dt,player,activeTarget,playing&&!inMenu&&!dialog.open&&!state.ended);
+  guideButton.hidden=inMenu||dialog.open||state.ended;
+  destination.hidden=inMenu||dialog.open||state.ended||renderer.xr.isPresenting;
+  if(!destination.hidden){
+    camera.updateMatrixWorld();markerPosition.set(activeTarget.x,2.2,activeTarget.z).project(camera);
+    if(markerPosition.z>1){
+      const local=camera.worldToLocal(new T.Vector3(activeTarget.x,2.2,activeTarget.z));
+      markerPosition.x=local.x>=0?2:-2;markerPosition.y=0;
+    }
+    destination.style.left=`${Math.max(5,Math.min(95,(markerPosition.x*.5+.5)*100))}%`;
+    destination.style.top=`${Math.max(16,Math.min(84,(-markerPosition.y*.5+.5)*100))}%`;
+    destination.querySelector('small').textContent=activeTarget.name;
+  }
   if (renderer.xr.isPresenting) {
-    glove.visible = false;
+    glove.visible = false;leftGlove.visible=false;
     xr.update(dt);
     renderer.render(scene, camera);
     return;
   }
-  glove.visible = true;
+  glove.visible = true;leftGlove.visible=true;
   gloveReach = Math.max(0, gloveReach - dt * 2.8);
-  glove.position.set(0.30 - gloveReach * 0.12, -0.32 + gloveReach * 0.08, -0.52 - gloveReach * 0.17);
+  const armX=innerWidth<700?.17:.25;
+  glove.position.set(armX - gloveReach*.08,-.22+gloveReach*.06,-.48-gloveReach*.15);
+  leftGlove.position.set(-armX,-.22,-.48);leftGlove.rotation.x=-.22;
   glove.rotation.x = -0.28 - gloveReach * 0.6;
+  const walking=motion&&['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].some(k=>keys.has(k));
+  const sway=motion?Math.sin(time*(walking?.008:.0018))*(walking?.012:.003):0;
+  glove.position.y+=sway;leftGlove.position.y-=sway;
+  glove.rotation.z=walking?Math.sin(time*.008)*.025:0;leftGlove.rotation.z=-glove.rotation.z;
   if (inMenu) {
-    if (!preferences.reducedMotion) menuMoon.rotation.y += dt * 0.045;
+    if (preferences.moonSpin) menuMoon.rotation.y += dt * 0.20;
     renderer.render(menuScene, menuCamera);
     return;
   }
@@ -727,14 +686,14 @@ function frame(time) {
     if (clearAt(player.x + dx, player.z)) player.x += dx;
     if (clearAt(player.x, player.z + dz)) player.z += dz;
     velocity -= 1.62 * dt;
-    jumpY = Math.max(0, jumpY + velocity * dt);
+    jumpY = Math.max(0, Math.min(1.1, jumpY + velocity * dt));
     if (jumpY === 0) velocity = 0;
   }
   camera.position.set(player.x, player.y + jumpY, player.z);
   camera.rotation.set(pitch, yaw, 0, "YXZ");
   arrow.position.y = preferences.reducedMotion
     ? 3
-    : 3 + Math.sin(time * 0.003) * 0.2;
+    : 2.6 + Math.sin(time * 0.003) * 0.12;
   crew.forEach(
     (p, i) =>
       (p.rotation.y = preferences.reducedMotion
@@ -744,18 +703,7 @@ function frame(time) {
   const s = stations[Math.min(state.day, 6)],
     distance = Math.hypot(s.x - player.x, s.z - player.z);
   near = distance < 3.4;
-  const bearing = Math.atan2(s.x - player.x, -(s.z - player.z)),
-    relative = Math.atan2(Math.sin(bearing + yaw), Math.cos(bearing + yaw));
-  const direction =
-    Math.abs(relative) < 0.35
-      ? "Ahead"
-      : Math.abs(relative) > 2.5
-        ? "Behind you"
-        : relative > 0
-          ? "To your right"
-          : "To your left";
-  document.getElementById("objective").innerHTML =
-    `<span class="kicker">CURRENT OBJECTIVE</span><h2>${state.ended ? "Mission complete" : days[state.day].title}</h2><p>${state.ended ? "Explore freely. Interact to review your mission." : `${s.name} · ${Math.round(distance)} m · ${direction}. Follow the amber marker.`}</p>`;
+  document.getElementById("objective").innerHTML = `<span class="kicker">${state.ended?'MISSION COMPLETE':'CURRENT TASK'}</span><h2>${state.ended?'Open your mission report.':briefings[state.day].title}</h2>`;
   document.getElementById("prompt").textContent = state.ended
     ? "Mission complete · E to view report"
     : near
@@ -764,6 +712,9 @@ function frame(time) {
   document.getElementById("interact").disabled = !state.ended && !near;
   renderer.render(scene, camera);
 }
+createCompanion(()=>state,show,resume);
+const restored=loadMission(initial,decide);
+if(restored){state=restored;missionStarted=true;}
 hud();
 applyPreferences();
 titleScreen();

@@ -2,11 +2,12 @@ import * as T from './vendor/three.module.js';
 
 export function astronautGlove() {
   const glove = new T.Group();
-  const fabric = new T.MeshStandardMaterial({color:0xf4dfbb, roughness:1});
+  const fabric = new T.MeshStandardMaterial({color:0xe5e8ec, roughness:1});
   const cuff = new T.MeshStandardMaterial({color:0x53677c, roughness:1});
-  const trim = new T.MeshStandardMaterial({color:0xe8a768, roughness:1});
+  const trim = new T.MeshStandardMaterial({color:0x8b929a, roughness:1});
   function part(size, xyz, material) {
-    const mesh = new T.Mesh(new T.BoxGeometry(...size), material);
+    const mesh = new T.Mesh(new T.SphereGeometry(0.5,16,12), material);
+    mesh.scale.set(...size);
     mesh.position.set(...xyz);
     glove.add(mesh);
   }

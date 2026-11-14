@@ -44,6 +44,13 @@ dialog summary { font-size:12px; line-height:1.7; }
 @media(pointer:coarse) { footer{font-size:0} }
 @media(prefers-reduced-motion:reduce) { button{transition:none} }
 #entry { display:none; }
+#moon-spin {pointer-events:auto;display:block;margin:18px auto 0;padding:8px 12px;font-size:10px;background:#29263d;color:#f5e7c9;border:1px solid #f5e7c944;box-shadow:none;letter-spacing:0}
+@media(max-width:700px){.title-screen .moon-caption{display:block;right:18px;top:18px;bottom:auto;font-size:0}.moon-caption>span{display:none}#moon-spin{margin:0}}
+#station-access { position:fixed; left:24px; bottom:70px; font-size:11px; }
+.title-screen #station-access { display:none; }
+dialog table { width:100%; border-collapse:collapse; font:12px 'Space Mono',monospace; margin:20px 0; }
+dialog th,dialog td { padding:8px; border-bottom:1px solid #29263d44; text-align:left; }
+@media(pointer:coarse) { #station-access {left:20px;bottom:155px;} }
 #enter-vr { display:none; position:fixed; right:24px; bottom:66px; z-index:9; }
 .vr-supported #enter-vr { display:block; }
 @media(pointer:coarse) { #enter-vr { bottom:88px; } }

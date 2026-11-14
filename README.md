@@ -1,6 +1,6 @@
 # Lunar Frontier
 
-Lunar Frontier is a browser game for ages 7–12 about running a lunar outpost. Explore in first person, walk up to mission terminals, and make decisions about power, life support, and crew safety over a seven-day expedition.
+Lunar Frontier is a first-person browser survival game aboard Selene, a spacecraft landed on the Moon. Explore six compartments, complete interactive system repairs, and manage power, life support, and crew safety over seven days.
 
 ## Run locally
 
@@ -20,3 +20,14 @@ Edit the files in `dist/` directly. The project has no build step.
 Create a branch from `main`, test your changes locally, and open a pull request describing what changed and how you tested it. Coordinate changes to `world.js` or `engine.js` when multiple people are editing them.
 
 The in-game science cards link to NASA sources. Game resource values and scenario events are simplified for play. This project was built for the [NASA Space Apps Junior Astronaut Mission Trainer challenge](https://www.spaceappschallenge.org/2026/challenges/junior-astronaut-mission-trainer/).
+
+## Current source layout
+
+- `dist/ship.js`: ship compartments, equipment and collision layout.
+- `dist/tasks.js`: valve, lock, power-routing, fluid and signal interactions.
+- `dist/surfaces.js`: locally generated metal-panel and lunar surface textures.
+- `dist/flight.css`: current neutral spacecraft interface styling, applied after legacy layout styles.
+- `dist/companion.js`: Nora and optional mission guidance.
+- `dist/xr.js`: experimental WebXR support; real headset verification remains outstanding.
+
+The ZIP includes all project source, bundled Three.js, its license, and hosting configuration. No build or package installation is required. Extract the ZIP before running the local server; opening the HTML directly as a file will not load JavaScript modules correctly. The main game is `dist/index.html`. Procedural surfaces are artistic approximations, not NASA imagery. Legacy CSS filenames are retained for layout compatibility.
