@@ -64,4 +64,5 @@ dialog a{color:#b0d7d0}dialog th,dialog td,dialog details{border-color:#839da544
 #joystick{background:#14232ccc;border-color:#8fb9b466}#stick{background:#94b7b6cc;border:1px solid #d5e6df88}
 @media(max-width:700px){header b{font-size:17px}#hud .kicker{background:transparent;border:0;color:#b9d0d1;font-size:8px}.meter{font-size:10px}.meter b{font-size:10px}.entry-panel h1{font-size:72px}.entry-panel{margin-top:25vh}.entry-panel nav button{font-size:15px}.title-screen #entry{background:linear-gradient(0deg,#111821fa 15%,#11182177 80%,transparent)}#objective h2{font-size:23px}dialog h2{font-size:28px}}
 @media(pointer:coarse){footer{font-size:0}}
-`n@media(min-width:701px){.entry-panel{margin-bottom:35px}.entry-panel nav{gap:8px;margin-top:24px}.entry-panel nav button{padding:14px 21px}.menu-note{margin-bottom:0}}
+@media(min-width:701px){.entry-panel{margin-bottom:35px}.entry-panel nav{gap:8px;margin-top:24px}.entry-panel nav button{padding:14px 21px}.menu-note{margin-bottom:0}}
+
