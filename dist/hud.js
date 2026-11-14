@@ -52,6 +52,7 @@ export function createHud(ctx) {
   destination.innerHTML = "<span>◇</span><small></small>";
   document.body.append(destination);
   const markerPosition = new T.Vector3();
+  const shownText = { objective: null, prompt: null }; // last text written by updateFrameText
 
   // Resource meters (top left) and the beacon position. Called when state changes.
   function updateMeters() {
@@ -283,16 +284,22 @@ export function createHud(ctx) {
     },
 
     // Every frame while walking: objective card, interact prompt and Interact button.
+    // Only touches the page when something changed: rewriting it every frame is slow.
     updateFrameText(station) {
       const { state } = ctx;
-      document.getElementById("objective").innerHTML =
-        `<span class="kicker">${state.ended ? "MISSION COMPLETE" : "CURRENT TASK"}</span><h2>${state.ended ? "Open your mission report." : briefings[state.day].title}</h2>`;
-      document.getElementById("prompt").textContent = state.ended
+      const objective = `<span class="kicker">${state.ended ? "MISSION COMPLETE" : "CURRENT TASK"}</span><h2>${state.ended ? "Open your mission report." : briefings[state.day].title}</h2>`;
+      if (objective !== shownText.objective)
+        document.getElementById("objective").innerHTML = shownText.objective = objective;
+      const prompt = state.ended
         ? "Mission complete · E to view report"
         : ctx.near
           ? `E / Interact · ${station.name}`
           : "";
-      document.getElementById("interact").disabled = !state.ended && !ctx.near;
+      if (prompt !== shownText.prompt)
+        document.getElementById("prompt").textContent = shownText.prompt = prompt;
+      const interact = document.getElementById("interact");
+      const disabled = !state.ended && !ctx.near;
+      if (interact.disabled !== disabled) interact.disabled = disabled;
     },
   };
 }
