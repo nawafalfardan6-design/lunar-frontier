@@ -1,93 +1,893 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
-header b{font-size:18px;text-shadow:none;transform:none}header small{font-size:8px}
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+header b {
+  font-size: 18px;
+  text-shadow: none;
+  transform: none;
+}
+header small {
+  font-size: 8px;
+}
 
-#hud{transform:none;width:215px;background:#f1ead9f2;border-radius:10px;box-shadow:0 8px 24px #0003}
-#objective{transform:none;border:1px solid #a5bfcb66;border-radius:12px;background:#152536ec;width:310px;padding:22px;box-shadow:0 8px 24px #0003}
-#objective h2{font-family:Barlow,Arial;font-size:26px;line-height:1.1;letter-spacing:0}
-#objective p{font-family:Barlow,Arial;font-size:16px;line-height:1.45}
-#objective .objective-hint{font-size:13px;color:#c7d8dd;border-top:1px solid #ffffff20;padding-top:12px}
-button{border-radius:7px;box-shadow:0 3px 0 #171c2b;font-family:Barlow,Arial;font-size:15px}
-dialog{border-radius:16px;border:1px solid #8d9d9e;box-shadow:0 25px 90px #0006}
-dialog h2{font-family:Barlow,Arial;font-size:32px;letter-spacing:-.5px}
-dialog p,dialog li{font-size:18px}.speaker{font-size:14px!important;color:#436d69!important;font-weight:bold}
-dialog .choice{font-family:Barlow,Arial;font-size:19px;border-radius:9px;background:#dde9dc;padding:20px}
-dialog .choice span{font-size:16px}.choice span:last-child{font-weight:600}
-#joystick{width:125px;height:125px;background:#15253699;border:2px solid #e5e8d777;border-radius:50%;position:relative;touch-action:none;pointer-events:auto}
-#stick{position:absolute;width:54px;height:54px;left:34px;top:34px;border-radius:50%;background:#e4eee4cc;border:2px solid #172c3a;pointer-events:none}
-#joystick small{position:absolute;bottom:-22px;width:100%;left:0;margin:0;font-size:10px;pointer-events:none}
-@media(max-width:700px){#hud{top:72px;left:12px;width:calc(100% - 24px);padding:10px 14px;display:flex;gap:14px;align-items:center}#hud .kicker{margin:0;background:none;color:#263342;width:55px;font-size:8px;padding:0}.meter{flex:1;margin:0;font-size:9px}.meter b{display:block;float:none;margin-top:3px}progress{height:8px}#objective{top:166px;left:12px;right:12px;width:auto;padding:12px 16px}#objective h2{font-size:21px;margin:6px 0}#objective p{font-size:13px;margin:3px 0}#objective .objective-hint{display:none}header{top:14px}header b{font-size:13px}#station-access{bottom:182px;left:15px;padding:10px 15px}#prompt{bottom:240px;font-size:12px;max-width:85%;width:max-content}dialog p{font-size:17px}dialog .choice{font-size:18px}footer #interact{padding:17px}#touch{bottom:42px}#touch #jump{margin-bottom:3px}}
-@media(max-height:520px) and (pointer:coarse){#hud{top:62px;width:230px;display:block}#hud .kicker{width:auto}.meter{margin-top:6px}.meter b{float:right;margin:0}#objective{left:auto;right:12px;top:62px;width:240px}#station-access{left:260px;bottom:22px}#touch{bottom:22px}#prompt{bottom:115px}}
+#hud {
+  transform: none;
+  width: 215px;
+  background: #f1ead9f2;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px #0003;
+}
+#objective {
+  transform: none;
+  border: 1px solid #a5bfcb66;
+  border-radius: 12px;
+  background: #152536ec;
+  width: 310px;
+  padding: 22px;
+  box-shadow: 0 8px 24px #0003;
+}
+#objective h2 {
+  font-family: Barlow, Arial;
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+#objective p {
+  font-family: Barlow, Arial;
+  font-size: 16px;
+  line-height: 1.45;
+}
+#objective .objective-hint {
+  font-size: 13px;
+  color: #c7d8dd;
+  border-top: 1px solid #ffffff20;
+  padding-top: 12px;
+}
+button {
+  border-radius: 7px;
+  box-shadow: 0 3px 0 #171c2b;
+  font-family: Barlow, Arial;
+  font-size: 15px;
+}
+dialog {
+  border-radius: 16px;
+  border: 1px solid #8d9d9e;
+  box-shadow: 0 25px 90px #0006;
+}
+dialog h2 {
+  font-family: Barlow, Arial;
+  font-size: 32px;
+  letter-spacing: -0.5px;
+}
+dialog p,
+dialog li {
+  font-size: 18px;
+}
+.speaker {
+  font-size: 14px !important;
+  color: #436d69 !important;
+  font-weight: bold;
+}
+dialog .choice {
+  font-family: Barlow, Arial;
+  font-size: 19px;
+  border-radius: 9px;
+  background: #dde9dc;
+  padding: 20px;
+}
+dialog .choice span {
+  font-size: 16px;
+}
+.choice span:last-child {
+  font-weight: 600;
+}
+#joystick {
+  width: 125px;
+  height: 125px;
+  background: #15253699;
+  border: 2px solid #e5e8d777;
+  border-radius: 50%;
+  position: relative;
+  touch-action: none;
+  pointer-events: auto;
+}
+#stick {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  left: 34px;
+  top: 34px;
+  border-radius: 50%;
+  background: #e4eee4cc;
+  border: 2px solid #172c3a;
+  pointer-events: none;
+}
+#joystick small {
+  position: absolute;
+  bottom: -22px;
+  width: 100%;
+  left: 0;
+  margin: 0;
+  font-size: 10px;
+  pointer-events: none;
+}
+@media (max-width: 700px) {
+  #hud {
+    top: 72px;
+    left: 12px;
+    width: calc(100% - 24px);
+    padding: 10px 14px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  #hud .kicker {
+    margin: 0;
+    background: none;
+    color: #263342;
+    width: 55px;
+    font-size: 8px;
+    padding: 0;
+  }
+  .meter {
+    flex: 1;
+    margin: 0;
+    font-size: 9px;
+  }
+  .meter b {
+    display: block;
+    float: none;
+    margin-top: 3px;
+  }
+  progress {
+    height: 8px;
+  }
+  #objective {
+    top: 166px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    padding: 12px 16px;
+  }
+  #objective h2 {
+    font-size: 21px;
+    margin: 6px 0;
+  }
+  #objective p {
+    font-size: 13px;
+    margin: 3px 0;
+  }
+  #objective .objective-hint {
+    display: none;
+  }
+  header {
+    top: 14px;
+  }
+  header b {
+    font-size: 13px;
+  }
+  #station-access {
+    bottom: 182px;
+    left: 15px;
+    padding: 10px 15px;
+  }
+  #prompt {
+    bottom: 240px;
+    font-size: 12px;
+    max-width: 85%;
+    width: max-content;
+  }
+  dialog p {
+    font-size: 17px;
+  }
+  dialog .choice {
+    font-size: 18px;
+  }
+  footer #interact {
+    padding: 17px;
+  }
+  #touch {
+    bottom: 42px;
+  }
+  #touch #jump {
+    margin-bottom: 3px;
+  }
+}
+@media (max-height: 520px) and (pointer: coarse) {
+  #hud {
+    top: 62px;
+    width: 230px;
+    display: block;
+  }
+  #hud .kicker {
+    width: auto;
+  }
+  .meter {
+    margin-top: 6px;
+  }
+  .meter b {
+    float: right;
+    margin: 0;
+  }
+  #objective {
+    left: auto;
+    right: 12px;
+    top: 62px;
+    width: 240px;
+  }
+  #station-access {
+    left: 260px;
+    bottom: 22px;
+  }
+  #touch {
+    bottom: 22px;
+  }
+  #prompt {
+    bottom: 115px;
+  }
+}
 
 /* Lunar field equipment: graphite shells, mineral accents and readable labels. */
-:root{--ink:#101820;--paper:#e5ecec;--orange:#d3af78;--mint:#8fb9b4;font-family:Barlow,Arial,sans-serif;color:#e5ecec}
-.companion-heading{display:flex;gap:14px;align-items:center;margin:22px 0;color:#b5ded5}
-.companion-avatar{display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid #9ac7bd;border-radius:50%;background:radial-gradient(circle at 30% 20%,#4b7c7a,#203b48);font:600 24px 'Barlow Condensed',Arial;color:#daf0e9}
-.companion-heading small{font:13px Barlow,Arial;color:#95b3bb;letter-spacing:0;margin-top:5px}.signal{margin-left:auto;color:#8fb9b4;letter-spacing:4px}
-.nora-response{border-left:2px solid #8fb9b4;background:#21373e;padding:14px 18px;margin:20px 0}.nora-response strong{font:10px 'IBM Plex Mono',monospace;letter-spacing:1px;color:#a6d1c8}.nora-response p{margin:8px 0 0}
-#ask-nora{position:fixed;left:24px;bottom:122px;display:flex;align-items:center;gap:11px;background:#142730ec;padding:10px 15px;color:#d6e9e4;border:1px solid #91b7b766;border-radius:9px;text-align:left;font-size:15px}
-#ask-nora .companion-avatar{width:32px;height:32px;font-size:20px}#ask-nora small{font:11px Barlow,Arial;letter-spacing:0;margin:3px 0 0;color:#a1bbc3}.title-screen #ask-nora{display:none}
-dialog .supply-note{font-size:13px;color:#92aab3;border-top:1px solid #8fb9b433;padding-top:14px}
-@media(pointer:coarse){#ask-nora{left:auto;right:16px;bottom:183px;padding:8px 12px}#ask-nora small{display:none}}
-body::after{box-shadow:inset 0 0 100px #0b151b22}
-header b{font:600 22px 'Barlow Condensed',Arial,sans-serif;letter-spacing:2px;color:#e4eeee}
-header small,.kicker,.entry-eyebrow,.entry-footer,.menu-note,.moon-caption,.day{font-family:'IBM Plex Mono',monospace}
-button,header button,dialog .secondary{font:600 15px Barlow,Arial,sans-serif;border:1px solid #708a9266;border-radius:3px;box-shadow:none;background:#202e38;color:#e7eeee;letter-spacing:.3px}
-button:hover:not(:disabled){background:#304551;transform:none;box-shadow:none;filter:none;border-color:#a5c8c6}
-button:active:not(:disabled){transform:translateY(1px);box-shadow:none}
-button:focus-visible,a:focus-visible{outline:2px solid #d9b779;outline-offset:4px}
-#hud,#objective{background:#14212aee;color:#e5ecec;border:1px solid #78939c55;border-top:3px solid #8fb9b4;border-radius:4px;box-shadow:0 10px 30px #0003;transform:none}
-#hud .kicker{background:#20313c;color:#b8cecf;border-bottom:1px solid #6e899455;font-size:9px}
-.meter{font-family:Barlow,Arial;font-size:13px}.meter b{font:11px 'IBM Plex Mono',monospace;color:#afcecd}
-progress{height:7px;border:0;border-radius:1px;background:#33454e}
-progress::-webkit-progress-bar{background:#33454e}
-progress::-webkit-progress-value{background:#8fb9b4;border:0}
-progress::-moz-progress-bar{background:#8fb9b4}
-#objective .kicker{color:#d3af78;font-size:9px}#objective h2{font:600 27px/1.1 'Barlow Condensed',Arial;letter-spacing:.3px}#objective p{color:#bdcdd2}#objective .objective-hint{color:#8fa7b1}
-#prompt{background:#182a34ef;border:1px solid #d3af78;color:#e7ece9;border-radius:3px;box-shadow:none;font:500 14px Barlow,Arial}
-footer{font:11px Barlow,Arial;color:#beced0;text-shadow:0 2px 4px #000}
-footer #interact,#station-access{background:#c4ad87;color:#17232a;border-color:#e5cfaa;box-shadow:none}
-dialog{background:#182630;color:#e5ecec;border:1px solid #79949c66;border-top:3px solid #8fb9b4;border-radius:5px;box-shadow:0 30px 100px #0008}
-dialog::backdrop{background:#080f1bb3;backdrop-filter:blur(5px)}
-dialog .kicker{color:#d3af78;border-bottom:1px solid #71868f44;letter-spacing:1.5px}
-dialog h1,dialog h2{font-family:'Barlow Condensed',Arial,sans-serif;font-weight:600;letter-spacing:.2px;color:#ecf1ef}dialog h1{font-size:44px}dialog h2{font-size:34px}
-dialog p,dialog li{font:400 18px/1.55 Barlow,Arial;color:#c0cfd3}
-.speaker{color:#9fc6c2!important;font-size:14px!important}
-dialog .choice{background:#263b43;border:1px solid #8ca9ad66;border-left:3px solid #8fb9b4;border-radius:3px;color:#eff5f1;font:600 20px Barlow,Arial}
-dialog .choice:hover{background:#345158}dialog .choice span{color:#c5d7da;font:400 16px/1.5 Barlow,Arial}
-dialog .choice span:last-child{color:#d7bd91;font-size:14px;margin-top:12px}
-dialog aside{background:#22363b;border:1px solid #729b9744;border-left:3px solid #8fb9b4;border-radius:2px}dialog aside h3{color:#a5cfca;font:600 17px Barlow,Arial}
-dialog a{color:#b0d7d0}dialog th,dialog td,dialog details{border-color:#839da544}dialog table,dialog summary{font-family:Barlow,Arial;font-size:14px}
-.setting label{color:#cad9db;font-family:Barlow,Arial;font-size:16px}.setting select{background:#263b43;color:#e5eeee;border:1px solid #8ca9ad77;font-family:Barlow,Arial;border-radius:3px}.setting input{accent-color:#8fb9b4}
-.title-screen #entry{background:linear-gradient(90deg,#111821e8,#11182177 42%,transparent 75%)}
-.entry-panel{margin-top:11vh}.entry-eyebrow{color:#8ba7b3;font-size:10px;letter-spacing:2px}
-.entry-panel h1{font:600 clamp(64px,8vw,106px)/.88 'Barlow Condensed',Arial,sans-serif;letter-spacing:1px;text-shadow:none;color:#e5ecec;margin:30px 0}
-.entry-panel h1 span{color:#9abbb9}.entry-tagline{color:#9fb3bd;font:400 19px/1.5 Barlow,Arial}
-.entry-panel nav{gap:10px;margin-top:32px;width:310px}
-.entry-panel nav button{background:#192934cc;color:#dce8e9;border:1px solid #819aa355;border-radius:3px;box-shadow:none;font:500 16px 'Barlow Condensed',Arial;letter-spacing:1.4px;padding:17px 21px}
-.entry-panel nav button:first-child{background:#9abbb9;color:#17262e;border-color:#c3d7d2}
-.entry-panel nav button:hover{background:#34515d;color:#eef5f5;border-color:#a8c8c5}
-.menu-note,.entry-footer{color:#7c949f}.moon-caption{color:#acbfc7;font-size:10px}.moon-caption span{color:#7c949f}
-#moon-spin{background:transparent;border:1px solid #7c949f66;color:#a9bcc3;font:12px Barlow,Arial;border-radius:3px}
-#touch button{background:#22363cdd;color:#dae9e6;border:1px solid #8fb9b466;box-shadow:none}
-#joystick{background:#14232ccc;border-color:#8fb9b466}#stick{background:#94b7b6cc;border:1px solid #d5e6df88}
-@media(max-width:700px){header b{font-size:17px}#hud .kicker{background:transparent;border:0;color:#b9d0d1;font-size:8px}.meter{font-size:10px}.meter b{font-size:10px}.entry-panel h1{font-size:72px}.entry-panel{margin-top:25vh}.entry-panel nav button{font-size:15px}.title-screen #entry{background:linear-gradient(0deg,#111821fa 15%,#11182177 80%,transparent)}#objective h2{font-size:23px}dialog h2{font-size:28px}}
-@media(pointer:coarse){footer{font-size:0}}
-@media(min-width:701px){.entry-panel{margin-bottom:35px}.entry-panel nav{gap:8px;margin-top:24px}.entry-panel nav button{padding:14px 21px}.menu-note{margin-bottom:0}}
-
+:root {
+  --ink: #101820;
+  --paper: #e5ecec;
+  --orange: #d3af78;
+  --mint: #8fb9b4;
+  font-family: Barlow, Arial, sans-serif;
+  color: #e5ecec;
+}
+.companion-heading {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 22px 0;
+  color: #b5ded5;
+}
+.companion-avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #9ac7bd;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 20%, #4b7c7a, #203b48);
+  font:
+    600 24px "Barlow Condensed",
+    Arial;
+  color: #daf0e9;
+}
+.companion-heading small {
+  font:
+    13px Barlow,
+    Arial;
+  color: #95b3bb;
+  letter-spacing: 0;
+  margin-top: 5px;
+}
+.signal {
+  margin-left: auto;
+  color: #8fb9b4;
+  letter-spacing: 4px;
+}
+.nora-response {
+  border-left: 2px solid #8fb9b4;
+  background: #21373e;
+  padding: 14px 18px;
+  margin: 20px 0;
+}
+.nora-response strong {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 1px;
+  color: #a6d1c8;
+}
+.nora-response p {
+  margin: 8px 0 0;
+}
+#ask-nora {
+  position: fixed;
+  left: 24px;
+  bottom: 122px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: #142730ec;
+  padding: 10px 15px;
+  color: #d6e9e4;
+  border: 1px solid #91b7b766;
+  border-radius: 9px;
+  text-align: left;
+  font-size: 15px;
+}
+#ask-nora .companion-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+}
+#ask-nora small {
+  font:
+    11px Barlow,
+    Arial;
+  letter-spacing: 0;
+  margin: 3px 0 0;
+  color: #a1bbc3;
+}
+.title-screen #ask-nora {
+  display: none;
+}
+dialog .supply-note {
+  font-size: 13px;
+  color: #92aab3;
+  border-top: 1px solid #8fb9b433;
+  padding-top: 14px;
+}
+@media (pointer: coarse) {
+  #ask-nora {
+    left: auto;
+    right: 16px;
+    bottom: 183px;
+    padding: 8px 12px;
+  }
+  #ask-nora small {
+    display: none;
+  }
+}
+body::after {
+  box-shadow: inset 0 0 100px #0b151b22;
+}
+header b {
+  font:
+    600 22px "Barlow Condensed",
+    Arial,
+    sans-serif;
+  letter-spacing: 2px;
+  color: #e4eeee;
+}
+header small,
+.kicker,
+.entry-eyebrow,
+.entry-footer,
+.menu-note,
+.moon-caption,
+.day {
+  font-family: "IBM Plex Mono", monospace;
+}
+button,
+header button,
+dialog .secondary {
+  font:
+    600 15px Barlow,
+    Arial,
+    sans-serif;
+  border: 1px solid #708a9266;
+  border-radius: 3px;
+  box-shadow: none;
+  background: #202e38;
+  color: #e7eeee;
+  letter-spacing: 0.3px;
+}
+button:hover:not(:disabled) {
+  background: #304551;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+  border-color: #a5c8c6;
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #d9b779;
+  outline-offset: 4px;
+}
+#hud,
+#objective {
+  background: #14212aee;
+  color: #e5ecec;
+  border: 1px solid #78939c55;
+  border-top: 3px solid #8fb9b4;
+  border-radius: 4px;
+  box-shadow: 0 10px 30px #0003;
+  transform: none;
+}
+#hud .kicker {
+  background: #20313c;
+  color: #b8cecf;
+  border-bottom: 1px solid #6e899455;
+  font-size: 9px;
+}
+.meter {
+  font-family: Barlow, Arial;
+  font-size: 13px;
+}
+.meter b {
+  font:
+    11px "IBM Plex Mono",
+    monospace;
+  color: #afcecd;
+}
+progress {
+  height: 7px;
+  border: 0;
+  border-radius: 1px;
+  background: #33454e;
+}
+progress::-webkit-progress-bar {
+  background: #33454e;
+}
+progress::-webkit-progress-value {
+  background: #8fb9b4;
+  border: 0;
+}
+progress::-moz-progress-bar {
+  background: #8fb9b4;
+}
+#objective .kicker {
+  color: #d3af78;
+  font-size: 9px;
+}
+#objective h2 {
+  font:
+    600 27px/1.1 "Barlow Condensed",
+    Arial;
+  letter-spacing: 0.3px;
+}
+#objective p {
+  color: #bdcdd2;
+}
+#objective .objective-hint {
+  color: #8fa7b1;
+}
+#prompt {
+  background: #182a34ef;
+  border: 1px solid #d3af78;
+  color: #e7ece9;
+  border-radius: 3px;
+  box-shadow: none;
+  font:
+    500 14px Barlow,
+    Arial;
+}
+footer {
+  font:
+    11px Barlow,
+    Arial;
+  color: #beced0;
+  text-shadow: 0 2px 4px #000;
+}
+footer #interact,
+#station-access {
+  background: #c4ad87;
+  color: #17232a;
+  border-color: #e5cfaa;
+  box-shadow: none;
+}
+dialog {
+  background: #182630;
+  color: #e5ecec;
+  border: 1px solid #79949c66;
+  border-top: 3px solid #8fb9b4;
+  border-radius: 5px;
+  box-shadow: 0 30px 100px #0008;
+}
+dialog::backdrop {
+  background: #080f1bb3;
+  backdrop-filter: blur(5px);
+}
+dialog .kicker {
+  color: #d3af78;
+  border-bottom: 1px solid #71868f44;
+  letter-spacing: 1.5px;
+}
+dialog h1,
+dialog h2 {
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #ecf1ef;
+}
+dialog h1 {
+  font-size: 44px;
+}
+dialog h2 {
+  font-size: 34px;
+}
+dialog p,
+dialog li {
+  font:
+    400 18px/1.55 Barlow,
+    Arial;
+  color: #c0cfd3;
+}
+.speaker {
+  color: #9fc6c2 !important;
+  font-size: 14px !important;
+}
+dialog .choice {
+  background: #263b43;
+  border: 1px solid #8ca9ad66;
+  border-left: 3px solid #8fb9b4;
+  border-radius: 3px;
+  color: #eff5f1;
+  font:
+    600 20px Barlow,
+    Arial;
+}
+dialog .choice:hover {
+  background: #345158;
+}
+dialog .choice span {
+  color: #c5d7da;
+  font:
+    400 16px/1.5 Barlow,
+    Arial;
+}
+dialog .choice span:last-child {
+  color: #d7bd91;
+  font-size: 14px;
+  margin-top: 12px;
+}
+dialog aside {
+  background: #22363b;
+  border: 1px solid #729b9744;
+  border-left: 3px solid #8fb9b4;
+  border-radius: 2px;
+}
+dialog aside h3 {
+  color: #a5cfca;
+  font:
+    600 17px Barlow,
+    Arial;
+}
+dialog a {
+  color: #b0d7d0;
+}
+dialog th,
+dialog td,
+dialog details {
+  border-color: #839da544;
+}
+dialog table,
+dialog summary {
+  font-family: Barlow, Arial;
+  font-size: 14px;
+}
+.setting label {
+  color: #cad9db;
+  font-family: Barlow, Arial;
+  font-size: 16px;
+}
+.setting select {
+  background: #263b43;
+  color: #e5eeee;
+  border: 1px solid #8ca9ad77;
+  font-family: Barlow, Arial;
+  border-radius: 3px;
+}
+.setting input {
+  accent-color: #8fb9b4;
+}
+.title-screen #entry {
+  background: linear-gradient(90deg, #111821e8, #11182177 42%, transparent 75%);
+}
+.entry-panel {
+  margin-top: 11vh;
+}
+.entry-eyebrow {
+  color: #8ba7b3;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+.entry-panel h1 {
+  font:
+    600 clamp(64px, 8vw, 106px) / 0.88 "Barlow Condensed",
+    Arial,
+    sans-serif;
+  letter-spacing: 1px;
+  text-shadow: none;
+  color: #e5ecec;
+  margin: 30px 0;
+}
+.entry-panel h1 span {
+  color: #9abbb9;
+}
+.entry-tagline {
+  color: #9fb3bd;
+  font:
+    400 19px/1.5 Barlow,
+    Arial;
+}
+.entry-panel nav {
+  gap: 10px;
+  margin-top: 32px;
+  width: 310px;
+}
+.entry-panel nav button {
+  background: #192934cc;
+  color: #dce8e9;
+  border: 1px solid #819aa355;
+  border-radius: 3px;
+  box-shadow: none;
+  font:
+    500 16px "Barlow Condensed",
+    Arial;
+  letter-spacing: 1.4px;
+  padding: 17px 21px;
+}
+.entry-panel nav button:first-child {
+  background: #9abbb9;
+  color: #17262e;
+  border-color: #c3d7d2;
+}
+.entry-panel nav button:hover {
+  background: #34515d;
+  color: #eef5f5;
+  border-color: #a8c8c5;
+}
+.menu-note,
+.entry-footer {
+  color: #7c949f;
+}
+.moon-caption {
+  color: #acbfc7;
+  font-size: 10px;
+}
+.moon-caption span {
+  color: #7c949f;
+}
+#moon-spin {
+  background: transparent;
+  border: 1px solid #7c949f66;
+  color: #a9bcc3;
+  font:
+    12px Barlow,
+    Arial;
+  border-radius: 3px;
+}
+#touch button {
+  background: #22363cdd;
+  color: #dae9e6;
+  border: 1px solid #8fb9b466;
+  box-shadow: none;
+}
+#joystick {
+  background: #14232ccc;
+  border-color: #8fb9b466;
+}
+#stick {
+  background: #94b7b6cc;
+  border: 1px solid #d5e6df88;
+}
+@media (max-width: 700px) {
+  header b {
+    font-size: 17px;
+  }
+  #hud .kicker {
+    background: transparent;
+    border: 0;
+    color: #b9d0d1;
+    font-size: 8px;
+  }
+  .meter {
+    font-size: 10px;
+  }
+  .meter b {
+    font-size: 10px;
+  }
+  .entry-panel h1 {
+    font-size: 72px;
+  }
+  .entry-panel {
+    margin-top: 25vh;
+  }
+  .entry-panel nav button {
+    font-size: 15px;
+  }
+  .title-screen #entry {
+    background: linear-gradient(0deg, #111821fa 15%, #11182177 80%, transparent);
+  }
+  #objective h2 {
+    font-size: 23px;
+  }
+  dialog h2 {
+    font-size: 28px;
+  }
+}
+@media (pointer: coarse) {
+  footer {
+    font-size: 0;
+  }
+}
+@media (min-width: 701px) {
+  .entry-panel {
+    margin-bottom: 35px;
+  }
+  .entry-panel nav {
+    gap: 8px;
+    margin-top: 24px;
+  }
+  .entry-panel nav button {
+    padding: 14px 21px;
+  }
+  .menu-note {
+    margin-bottom: 0;
+  }
+}
 
 /* Instrument-shaped controls, with large targets for gloves and touch. */
-#hud{border-radius:8px 8px 30px 8px;border-top:0;border-left:3px solid #8fb9b4}
-#objective{background:linear-gradient(90deg,#14212aef,#14212a99);border:0;border-left:2px solid #d3af78;border-radius:0 28px 28px 0;padding:16px 20px}
-#objective .objective-hint{display:none}#objective h2{font-size:23px}
-#prompt{border-radius:40px;padding:12px 24px}#ask-nora{border-radius:40px}#station-access{border-radius:24px 6px 24px 6px}
-dialog{border-radius:28px 8px 28px 8px}dialog:has(.repair){border:0;border-top:4px solid #9bc8c1;max-width:620px;width:calc(100% - 32px)}
-#apparatus{display:flex;justify-content:center;flex-wrap:wrap;gap:18px;padding:26px 4px;background:radial-gradient(ellipse,#34505755,transparent 70%);border-bottom:1px solid #9bc8c144}
-#apparatus button{min-width:72px;min-height:72px}#apparatus small{display:block;font:11px monospace;letter-spacing:1px;margin:8px 0}
-#apparatus .valve{width:104px;height:104px;border:8px double #6c8993;border-radius:50%;background:#1c323d;box-shadow:inset 0 0 0 5px #0c1b24}
-.valve span{display:block;font-size:38px;line-height:38px;transition:transform .15s}.valve[aria-pressed=true]{border-color:#9bc8c1!important;color:#b6efcb}
-#apparatus .lock{border-radius:8px 8px 36px 36px;border-top:6px solid #c9aa77;font-size:30px}.lock:disabled{opacity:1;color:#9bc8c1;background:#28493e}
-#apparatus .breaker{border-radius:8px;border-bottom:12px solid #111e27}.breaker span{display:block;font-size:30px}.breaker[aria-pressed=true]{background:#527e72;border-bottom-color:#bde8d2}
-.tuner{display:block;width:100%;font:14px monospace;color:#b8d8d7}.tuner output{float:right;border:1px solid #8fb9b466;border-radius:50%;padding:10px;color:#e8d7a9}.tuner input{display:block;width:100%;margin:22px 0;accent-color:#d3af78;min-height:32px;background:linear-gradient(90deg,transparent calc(var(--target) - 3%),#8fb9b4 calc(var(--target) - 3%),#8fb9b4 calc(var(--target) + 3%),transparent calc(var(--target) + 3%));cursor:pointer}
-#task-feedback{font:14px monospace;min-height:36px;color:#c8d9d5}#finish-task{border-radius:24px;background:#9bc8c1;color:#14212a;margin-right:12px}#finish-task:disabled{opacity:.35;cursor:not-allowed}
-.repair-sequence h2{color:#e2c896}.repair-water h2{color:#9fcedb}.repair-signal h2{color:#c4b9dd}
-@media(max-width:700px){#apparatus{gap:10px;padding:16px 0}#apparatus .valve{width:82px;height:82px}.repair h2{font-size:27px}#objective{padding:10px 15px}#objective h2{font-size:20px}dialog:has(.repair){max-height:90dvh}.repair p{font-size:15px}}
+#hud {
+  border-radius: 8px 8px 30px 8px;
+  border-top: 0;
+  border-left: 3px solid #8fb9b4;
+}
+#objective {
+  background: linear-gradient(90deg, #14212aef, #14212a99);
+  border: 0;
+  border-left: 2px solid #d3af78;
+  border-radius: 0 28px 28px 0;
+  padding: 16px 20px;
+}
+#objective .objective-hint {
+  display: none;
+}
+#objective h2 {
+  font-size: 23px;
+}
+#prompt {
+  border-radius: 40px;
+  padding: 12px 24px;
+}
+#ask-nora {
+  border-radius: 40px;
+}
+#station-access {
+  border-radius: 24px 6px 24px 6px;
+}
+dialog {
+  border-radius: 28px 8px 28px 8px;
+}
+dialog:has(.repair) {
+  border: 0;
+  border-top: 4px solid #9bc8c1;
+  max-width: 620px;
+  width: calc(100% - 32px);
+}
+#apparatus {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 26px 4px;
+  background: radial-gradient(ellipse, #34505755, transparent 70%);
+  border-bottom: 1px solid #9bc8c144;
+}
+#apparatus button {
+  min-width: 72px;
+  min-height: 72px;
+}
+#apparatus small {
+  display: block;
+  font: 11px monospace;
+  letter-spacing: 1px;
+  margin: 8px 0;
+}
+#apparatus .valve {
+  width: 104px;
+  height: 104px;
+  border: 8px double #6c8993;
+  border-radius: 50%;
+  background: #1c323d;
+  box-shadow: inset 0 0 0 5px #0c1b24;
+}
+.valve span {
+  display: block;
+  font-size: 38px;
+  line-height: 38px;
+  transition: transform 0.15s;
+}
+.valve[aria-pressed="true"] {
+  border-color: #9bc8c1 !important;
+  color: #b6efcb;
+}
+#apparatus .lock {
+  border-radius: 8px 8px 36px 36px;
+  border-top: 6px solid #c9aa77;
+  font-size: 30px;
+}
+.lock:disabled {
+  opacity: 1;
+  color: #9bc8c1;
+  background: #28493e;
+}
+#apparatus .breaker {
+  border-radius: 8px;
+  border-bottom: 12px solid #111e27;
+}
+.breaker span {
+  display: block;
+  font-size: 30px;
+}
+.breaker[aria-pressed="true"] {
+  background: #527e72;
+  border-bottom-color: #bde8d2;
+}
+.tuner {
+  display: block;
+  width: 100%;
+  font: 14px monospace;
+  color: #b8d8d7;
+}
+.tuner output {
+  float: right;
+  border: 1px solid #8fb9b466;
+  border-radius: 50%;
+  padding: 10px;
+  color: #e8d7a9;
+}
+.tuner input {
+  display: block;
+  width: 100%;
+  margin: 22px 0;
+  accent-color: #d3af78;
+  min-height: 32px;
+  background: linear-gradient(
+    90deg,
+    transparent calc(var(--target) - 3%),
+    #8fb9b4 calc(var(--target) - 3%),
+    #8fb9b4 calc(var(--target) + 3%),
+    transparent calc(var(--target) + 3%)
+  );
+  cursor: pointer;
+}
+#task-feedback {
+  font: 14px monospace;
+  min-height: 36px;
+  color: #c8d9d5;
+}
+#finish-task {
+  border-radius: 24px;
+  background: #9bc8c1;
+  color: #14212a;
+  margin-right: 12px;
+}
+#finish-task:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.repair-sequence h2 {
+  color: #e2c896;
+}
+.repair-water h2 {
+  color: #9fcedb;
+}
+.repair-signal h2 {
+  color: #c4b9dd;
+}
+@media (max-width: 700px) {
+  #apparatus {
+    gap: 10px;
+    padding: 16px 0;
+  }
+  #apparatus .valve {
+    width: 82px;
+    height: 82px;
+  }
+  .repair h2 {
+    font-size: 27px;
+  }
+  #objective {
+    padding: 10px 15px;
+  }
+  #objective h2 {
+    font-size: 20px;
+  }
+  dialog:has(.repair) {
+    max-height: 90dvh;
+  }
+  .repair p {
+    font-size: 15px;
+  }
+}

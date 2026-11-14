@@ -13,7 +13,10 @@ Use **WASD** or arrow keys to walk, drag to look, **E** to use a nearby terminal
 Edit the files in `dist/` directly. The project has no build step.
 
 - `dist/index.html`, `dist/world.css`, and `dist/indie.css` define the main interface and layout.
-- `dist/world.js` handles the 3D scene, movement, settings, and mission interface.
+- `dist/world.js` is the 3D game's entry point: shared state, module wiring and the frame loop.
+- `dist/scene.js` and `dist/landscape.js` build the 3D world (renderer, lights, materials, terrain, sky).
+- `dist/controls.js` handles keyboard, mouse and touch look, movement physics and collision.
+- `dist/hud.js` handles the HUD text, dialogs, menus and settings.
 - `dist/engine.js` defines the seven mission days, choices, and consequences.
 - `dist/vendor/` contains Three.js and its license.
 

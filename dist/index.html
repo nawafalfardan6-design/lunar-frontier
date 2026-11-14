@@ -1,1 +1,44 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lunar Frontier 3D</title><link rel="stylesheet" href="world.css"><link rel="stylesheet" href="indie.css"><link rel="stylesheet" href="player.css"><link rel="stylesheet" href="flight.css"></head><body><canvas id="world"></canvas><header><b>◐ LUNAR FRONTIER<small>LANDED / SELENE</small></b><button id="help">Controls & science</button></header><section id="hud"></section><section id="objective"></section><div id="crosshair">+</div><div id="prompt"></div><footer>WASD move · Click scene to look · E interact · Esc pause<button id="interact">Interact</button></footer><div id="touch"><div><button data-key="KeyW">▲</button><div><button data-key="KeyA">◀</button><button data-key="KeyS">▼</button><button data-key="KeyD">▶</button></div></div><button id="jump">Jump</button></div><dialog id="dialog"><div id="modal"></div></dialog><script src="engine.js"></script><script type="module" src="world.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Lunar Frontier 3D</title>
+    <link rel="stylesheet" href="world.css" />
+    <link rel="stylesheet" href="indie.css" />
+    <link rel="stylesheet" href="player.css" />
+    <link rel="stylesheet" href="flight.css" />
+  </head>
+  <body>
+    <canvas id="world"></canvas>
+    <header>
+      <b>◐ LUNAR FRONTIER<small>LANDED / SELENE</small></b>
+      <button id="help">Controls & science</button>
+    </header>
+    <!-- Filled by hud.js: resource meters, current objective, interact prompt. -->
+    <section id="hud"></section>
+    <section id="objective"></section>
+    <div id="crosshair">+</div>
+    <div id="prompt"></div>
+    <footer>
+      WASD move · Click scene to look · E interact · Esc pause
+      <button id="interact">Interact</button>
+    </footer>
+    <!-- Touch controls. presentation.js replaces the first div with a joystick. -->
+    <div id="touch">
+      <div>
+        <button data-key="KeyW">▲</button>
+        <div>
+          <button data-key="KeyA">◀</button>
+          <button data-key="KeyS">▼</button>
+          <button data-key="KeyD">▶</button>
+        </div>
+      </div>
+      <button id="jump">Jump</button>
+    </div>
+    <!-- Every panel and dialog renders into #modal (hud.js show()). -->
+    <dialog id="dialog"><div id="modal"></div></dialog>
+    <script src="engine.js"></script>
+    <script type="module" src="world.js"></script>
+  </body>
+</html>
