@@ -1,10 +1,12 @@
 /*
  * Lunar Frontier: the simple 2D mission dashboard (mission.html).
- * Classic script. It uses the engine globals from engine.js:
+ * ES module. It uses the engine globals from engine.js:
  *   RESOURCES, RESOURCE_KEYS, days, dailyBudget, initial, decide, forecast,
  *   goals, report, SAFE_LEVEL, RESEARCH_GOAL, RESERVE_GOAL, HEALTHY_LEVEL, SUNSET_DAY.
  * Everything here lives inside one function so nothing clashes with those names.
  */
+import { stormEvidence, acknowledgeEarth } from './mission-evidence.js';
+
 (function () {
   'use strict';
 
@@ -171,6 +173,7 @@
       <h2 id="day-title">${esc(day.title)}</h2>
       <blockquote class="briefing"><p>“${esc(day.briefing)}”</p><cite>${esc(day.speaker)}</cite></blockquote>
       <p class="story">${esc(day.story)}</p>
+      ${stormEvidence(state.day)}
       <h3 class="choices-title">Choose one job for today</h3>
       <div class="choices">${cards}</div>
     </section>`;
@@ -237,7 +240,7 @@
       <h2 id="welcome-title">You are the commander.</h2>
       <p>Selene has landed on the Moon with four crew. Each day you pick one job. Every choice shows what it costs before you pick it, so read, plan and choose.</p>
       <ul class="rules">
-        <li><span aria-hidden="true">🛡️</span> <strong>Keep the crew safe:</strong> finish with 💨 Air &amp; Water and 🛡️ Crew Safety at ${SAFE_LEVEL} or more.</li>
+        <li><span aria-hidden="true">🛡️</span> <strong>Keep the crew safe:</strong> finish with 💨 Life Support and 🛡️ Crew Safety at ${SAFE_LEVEL} or more.</li>
         <li><span aria-hidden="true">🌙</span> <strong>Plan for the night:</strong> the Sun sets on Day ${SUNSET_DAY}. After that there is no solar power, and the heaters need extra ⚡.</li>
         <li><span aria-hidden="true">⚠️</span> <strong>Watch the warnings:</strong> they tell you what will go wrong, when, and how to fix it.</li>
       </ul>
@@ -268,9 +271,17 @@
 
     app.querySelectorAll('[data-choice]').forEach(button => {
       button.onclick = () => {
-        state = decide(state, Number(button.dataset.choice));
-        view = 'result';
-        render(true);
+        const before = state;
+        const index = Number(button.dataset.choice);
+        const finish = () => {
+          if (state !== before) return;
+          state = decide(before, index);
+          view = 'result';
+          render(true);
+        };
+        if (days[state.day].choices[index].kind === 'comms') {
+          acknowledgeEarth(html => { app.innerHTML = html; }, finish);
+        } else finish();
       };
     });
     const on = (id, handler) => { const el = document.getElementById(id); if (el) el.onclick = handler; };

@@ -146,7 +146,7 @@ export function buildShip({ scene, box, mesh, mat, obstacle, mergeParts }) {
   box(19, 0.5, 0.4, wall, 0, 3.25, -13.5);
   for (const x of [-9, -4.5, 0, 4.5, 9]) box(0.25, 2, 0.5, trim, x, 2.2, -13.5);
   box(19, 0.12, 0.5, beam, 0, 1.42, -13.45); // window sill
-  box(19, 3.5, 0.4, wall, 0, 1.75, 13.5);
+  for (const x of [-5.45, 5.45]) box(8.1, 3.5, 0.4, wall, x, 1.75, 13.5);
   for (const side of [-1, 1]) {
     box(0.4, 1.4, 27, wall, side * 9, 0.7, 0);
     box(0.4, 0.5, 27, wall, side * 9, 3.25, 0);
@@ -167,9 +167,13 @@ export function buildShip({ scene, box, mesh, mat, obstacle, mergeParts }) {
     scene.add(lamp);
   }
   // Rear hatch with orange hazard markings.
-  box(2.8, 3.8, 0.2, trim, 0, 2, 13.2);
-  box(0.08, 3.6, 0.22, COLORS.hatch, 0, 2, 13.06);
-  box(2.2, 0.12, 0.1, COLORS.hatch, 0, 2.1, 12.95);
+  const hatch = new T.Group();
+  hatch.name = 'eva-hatch';
+  hatch.userData.dynamic = true;
+  scene.add(hatch);
+  hatch.add(box(2.8, 3.8, 0.2, trim, 0, 2, 13.2));
+  hatch.add(box(0.08, 3.6, 0.22, COLORS.hatch, 0, 2, 13.06));
+  hatch.add(box(2.2, 0.12, 0.1, COLORS.hatch, 0, 2.1, 12.95));
 
   // Station console: desk, monitor, glowing trim in the room's colour.
   function screen(name, x, z, angle) {

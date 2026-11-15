@@ -204,6 +204,14 @@ export function createControls(ctx) {
   }
 
   const api = {
+    face(x, z) {
+      yaw = Math.atan2(player.x - x, player.z - z);
+    },
+    place(x, z, angle = 0) {
+      player.set(x, 1.8, z);
+      yaw = angle;
+      pitch = jumpY = vx = vz = vy = 0;
+    },
     jump,
     relock,
     isWalking() {

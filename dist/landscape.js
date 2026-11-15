@@ -644,5 +644,11 @@ export function buildSky(scene) {
   sunHalo.scale.set(34, 34, 1);
   sunHalo.renderOrder = -998;
   sky.add(sunHalo);
-  return { sky, earth, starMaterials: [starfield.material] };
+  return {
+    sky, earth, starMaterials: [starfield.material],
+    setSunlight(visible) {
+      solarDisc.visible = visible;
+      sunHalo.visible = visible;
+    },
+  };
 }

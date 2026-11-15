@@ -9,6 +9,7 @@
 // Engine globals from engine.js (classic script): days, initial, decide, dailyBudget,
 // RESOURCES, RESOURCE_KEYS.
 import { createDebugMenu } from "./debug.js";
+import { createEva } from "./eva.js";
 import * as T from "./vendor/three.module.js";
 import { shipStations } from "./ship.js";
 import { createCompanion } from "./companion.js";
@@ -48,6 +49,7 @@ ctx.clearAt = createClearance(ctx.obstacles);
 ctx.stage = createScene(ctx);
 ctx.hud = createHud(ctx);
 ctx.controls = createControls(ctx);
+ctx.eva = createEva(ctx);
 const { stage, hud, controls, player, preferences } = ctx;
 
 window.addEventListener("resize", stage.resize);
@@ -65,6 +67,10 @@ ctx.xr = createXR({
   status() {
     const { state } = ctx;
     const station = currentStation(ctx);
+    if (state.expedition && (!state.expedition.complete || state.expedition.outside)) {
+      const e = state.expedition;
+      return `${e.outside ? 'SURFACE EXPEDITION' : 'AIR RESERVE LOW'}\nSuit oxygen ${Math.ceil(e.suit)}/40 · Base oxygen ${Math.floor(e.oxygen)}\nWater ${e.water} · Meals ${e.food} days\nGo to: ${station.name}\nPull trigger to interact. Below 15 suit oxygen: return. Empty suit: rescue costs 5 Crew Safety.`;
+    }
     ctx.near = Math.hypot(station.x - player.x, station.z - player.z) < 3.4;
     if (state.ended) return "Mission complete\nPull trigger to view report";
     const meters = RESOURCE_KEYS.map((key) => `${RESOURCES[key].label} ${state[key]}`).join(" · ");
@@ -93,6 +99,7 @@ function frame(time) {
   if (stage.renderer.xr.isPresenting) {
     stage.hideGloves();
     ctx.xr.update(dt);
+    ctx.eva.update(dt);
     stage.render();
     return;
   }
@@ -100,6 +107,7 @@ function frame(time) {
   ctx.gloveReach = Math.max(0, ctx.gloveReach - dt * 2.8);
   stage.animateGloves(time, ctx.gloveReach, motion, motion && controls.isWalking());
   if (ctx.inMenu) {
+    ctx.eva.update(0);
     stage.renderMenu(dt, preferences.moonSpin);
     return;
   }
@@ -107,15 +115,17 @@ function frame(time) {
   stage.animateIdle(time, preferences.reducedMotion);
   ctx.near = Math.hypot(activeTarget.x - player.x, activeTarget.z - player.z) < 3.4;
   hud.updateFrameText(activeTarget);
+  ctx.eva.update(dt);
   stage.render();
 }
 
 createCompanion(() => ctx.state, hud.show, hud.resume);
-const restored = loadMission(initial, decide);
+const restored = loadMission(initial, decide, { expedition: true });
 if (restored) {
   ctx.state = restored;
   ctx.missionStarted = true;
 }
+ctx.eva.restore();
 hud.updateMeters();
 hud.applyPreferences();
 hud.titleScreen();

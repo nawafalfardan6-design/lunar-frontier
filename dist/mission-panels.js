@@ -4,6 +4,8 @@
 // Engine globals from engine.js: RESOURCES, RESOURCE_KEYS, SAFE_LEVEL, RESERVE_GOAL,
 // RESEARCH_GOAL, SUNSET_DAY, days, dailyBudget, forecast, goals, report.
 
+import { stormEvidence } from "./mission-evidence.js";
+
 const KIND_LABELS = {
   repair: "🔧 Repair",
   science: "🧪 Science",
@@ -255,10 +257,12 @@ export function choiceHtml(state) {
       </div>
       <div>
         ${budgetLine(state.day)}
+        ${state.expedition ? '<p class="lf-budget">Crew supplies tonight: −4 base oxygen, −1 meal-day. A shortage costs 5 Crew Safety. Life Support is the recycling-system health score; your stored supplies are shown separately.</p>' : ''}
         ${warningBox(state.warnings, "Warnings right now")}
         ${comingForAll.map((w) => `<p class="lf-coming"><b>Coming up:</b> ${esc(w.text)}</p>`).join("")}
       </div>
     </div>
+    ${stormEvidence(state.day)}
     <div class="lf-pickrow">
       <h3 class="lf-subhead">Pick one job for today</h3>
       <p class="lf-hint">“After tonight” adds the solar power and what the ship uses.</p>
@@ -410,7 +414,7 @@ export function goalsHtml(state) {
   return `<section class="lf-panel lf-goals">
     <span class="kicker">MISSION GOALS · ${state.ended ? "MISSION OVER" : `DAY ${state.day + 1} OF ${days.length}`}</span>
     <h2>Earn stars, keep the crew safe</h2>
-    <p>Finish with 💨 Air &amp; Water and 🛡️ Crew Safety at <b>${SAFE_LEVEL} or more</b>. A safe crew plus <b>2 stars</b> is a Mission success.</p>
+    <p>Finish with 💨 Life Support and 🛡️ Crew Safety at <b>${SAFE_LEVEL} or more</b>. A safe crew plus <b>2 stars</b> is a Mission success.</p>
     ${starList(goals(state), false)}
     ${state.ended ? "" : warnings + budgetLine(dayIndex)}
     <button type="button" id="goals-close">Got it</button>
@@ -430,7 +434,7 @@ export function guideHtml() {
     ],
     [
       "📊",
-      "Watch the <b>4 meters</b>: ⚡ Battery, 💨 Air &amp; Water, 🛡️ Crew Safety and 🔬 Science. Every choice shows how they will change.",
+      "Watch the <b>4 meters</b>: ⚡ Battery, 💨 Life Support, 🛡️ Crew Safety and 🔬 Science. Every choice shows how they will change.",
     ],
     [
       "☀️",

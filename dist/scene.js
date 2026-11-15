@@ -305,6 +305,8 @@ export function createScene({ canvas, dialog, modal, obstacles, clearAt }) {
   scene.add(shipRoot);
   const shipHelpers = createHelpers(shipRoot, obstacles);
   const animateShip = buildShip(shipHelpers);
+  const hatch = shipRoot.getObjectByName('eva-hatch');
+  let hatchOpen = false;
   mergeStatic(shipRoot);
   const helpers = createHelpers(scene, obstacles);
   const { mesh } = helpers;
@@ -339,6 +341,7 @@ export function createScene({ canvas, dialog, modal, obstacles, clearAt }) {
 
   return {
     renderer,
+    setHatch(open) { hatchOpen = open; },
     scene,
     camera,
     guidance,
@@ -361,8 +364,15 @@ export function createScene({ canvas, dialog, modal, obstacles, clearAt }) {
     placeBeacon(station) {
       beacon.position.set(station.x, 0, station.z);
     },
+    // Scenario sunset, not a lunar ephemeris. Cabin lamps stay on.
+    setMissionDay(dayIndex) {
+      const sunlight = dailyBudget(dayIndex).sunlight;
+      sun.intensity = sunlight ? SUN_INTENSITY : 0;
+      backdrop.setSunlight(sunlight);
+    },
     // Start of every frame: sky follows the viewer; ship systems, Earth and crew idle.
     animateBackdrop(time, dt, motion) {
+      if (hatch) hatch.position.y += ((hatchOpen ? 3.9 : 0) - hatch.position.y) * Math.min(1, dt * 8);
       camera.getWorldPosition(skyAnchor);
       sky.position.copy(skyAnchor);
       animateShip(time * 0.001, motion);

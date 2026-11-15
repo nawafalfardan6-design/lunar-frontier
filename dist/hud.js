@@ -6,9 +6,10 @@
 // The HTML for the HUD and the mission dialogs comes from mission-panels.js.
 // Engine globals from engine.js: days, initial, decide.
 import * as T from "./vendor/three.module.js";
-import { opening, companionReaction } from "./companion.js";
+import { companionReaction } from "./companion.js";
 import { saveMission } from "./mission-session.js";
 import { startTask } from "./tasks.js";
+import { acknowledgeEarth } from "./mission-evidence.js";
 import {
   hudHtml,
   objectiveHtml,
@@ -44,6 +45,8 @@ export function loadPreferences() {
 
 // The terminal for today's mission day: days[i].station names one of ctx.stations.
 export function currentStation(ctx) {
+  const expeditionTarget = ctx.eva?.target();
+  if (expeditionTarget) return expeditionTarget;
   const day = days[Math.min(ctx.state.day, days.length - 1)];
   return ctx.stations.find((station) => station.name === day.station) || ctx.stations[0];
 }
@@ -80,7 +83,9 @@ export function createHud(ctx) {
 
   // HUD panel (day, sunlight, meters, stars) and the beacon. Called when state changes.
   function updateMeters() {
+    lastObjective = "";
     hud.innerHTML = hudHtml(ctx.state);
+    ctx.stage.setMissionDay(Math.min(ctx.state.day, days.length - 1));
     document.getElementById("hud-goals").onclick = () => {
       if (!dialog.open && !ctx.inMenu) goalsDialog(resume);
     };
@@ -132,9 +137,22 @@ export function createHud(ctx) {
         resume();
         return;
       }
-      show(opening);
-      document.getElementById("launch").onclick = resume;
+      ctx.eva.opening();
     };
+    if (ctx.missionStarted) {
+      const fresh = document.createElement("button");
+      fresh.textContent = "NEW EXPEDITION";
+      document.getElementById("start-game").after(fresh);
+      fresh.onclick = () => {
+        show('<h2>Start a new expedition?</h2><p>This replaces your progress on this device.</p><button id="fresh-yes">Start again</button><button id="fresh-no">Keep my progress</button>');
+        document.getElementById("fresh-no").onclick = () => dialog.close();
+        document.getElementById("fresh-yes").onclick = () => {
+          ctx.state = initial();
+          ctx.eva.reset();
+          updateMeters();
+        };
+      };
+    }
     document.getElementById("settings").onclick = () => settingsMenu();
     document.getElementById("moon-spin").onclick = (event) => {
       preferences.moonSpin = !preferences.moonSpin;
@@ -187,10 +205,8 @@ export function createHud(ctx) {
     show(reportHtml(ctx.state));
     document.getElementById("replay").onclick = () => {
       ctx.state = initial();
-      saveMission(ctx.state);
-      ctx.controls.reset();
+      ctx.eva.reset();
       updateMeters();
-      resume();
     };
     document.getElementById("explore").onclick = resume;
   }
@@ -205,6 +221,7 @@ export function createHud(ctx) {
       missionReport();
       return;
     }
+    if (ctx.eva?.intercept()) return;
     if (!ctx.near && !direct) return;
     chooseJob();
   }
@@ -217,7 +234,11 @@ export function createHud(ctx) {
       button.onclick = () => {
         if (ctx.state !== state) return; // already chosen (double click)
         const index = Number(button.dataset.choice);
-        const finish = () => applyChoice(state, index);
+        const finish = () => {
+          if (days[state.day].choices[index].kind === "comms") {
+            acknowledgeEarth(show, () => applyChoice(state, index));
+          } else applyChoice(state, index);
+        };
         // VR has no sliders, so the mini-game is skipped there.
         if (ctx.stage.renderer.xr.isPresenting) finish();
         else startTask(days[state.day].choices[index], state.day + 1, show, finish, chooseJob);
@@ -287,7 +308,8 @@ export function createHud(ctx) {
         vrButton.disabled = true;
         try {
           await xr.enter();
-          resume();
+          if (!ctx.missionStarted) ctx.eva.opening();
+          else resume();
         } catch {
           show(
             '<h2>VR could not start</h2><p>Open the game directly in Quest Browser and try again.</p><button id="vr-close">Close</button>',

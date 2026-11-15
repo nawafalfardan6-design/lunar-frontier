@@ -7,6 +7,7 @@
  * them through the engine, so a save can never hold impossible meter values.
  */
 
+const EXPEDITION_KEY = 'lunar-frontier-expedition-v1';
 const SAVE_KEY = 'lunar-frontier-mission-v2';
 const SAVE_VERSION = 2;
 /* Saves from the first version of the game. They no longer match the days. */
@@ -14,7 +15,7 @@ const OLD_SAVE_KEYS = ['lunar-frontier-mission-v1'];
 
 const METERS = [
   ['power', '⚡', 'Battery'],
-  ['life', '💨', 'Air & Water'],
+  ['life', '💨', 'Life Support'],
   ['safety', '🛡️', 'Crew Safety'],
   ['science', '🔬', 'Science'],
 ];
@@ -27,11 +28,36 @@ function discard(key) {
   try { localStorage.removeItem(key); } catch { /* storage blocked: nothing to remove */ }
 }
 
+// Validate the complete snapshot: surface actions cannot be reconstructed from daily choices.
+export function validExpeditionSave(saved) {
+  const s = saved?.state, e = s?.expedition, mission = engineDays();
+  if (saved?.version !== 1 || !s || !e || e.version !== 1 || !mission) return false;
+  const between = (n, lo, hi) => Number.isFinite(n) && n >= lo && n <= hi;
+  if (!Number.isInteger(s.day) || !between(s.day, 0, mission.length)) return false;
+  if (!['power','life','safety','science'].every(k => between(s[k], 0, 100))) return false;
+  if (typeof s.ended !== 'boolean' || s.ended !== (s.day >= mission.length || s.life === 0 || s.safety === 0)) return false;
+  if (!Array.isArray(s.log) || s.log.length !== s.day || !Array.isArray(s.flags) || !s.flags.every(f => typeof f === 'string')) return false;
+  if (!Array.isArray(s.warnings) || !s.warnings.every(w => typeof w?.text === 'string')) return false;
+  if (!s.log.every((entry, i) => mission[i].choices.some(c => c.id === entry.choiceId) && entry.after && entry.deltas && Array.isArray(entry.notes))) return false;
+  if (!['complete','suited','outside'].every(k => typeof e[k] === 'boolean')) return false;
+  if (!between(e.suit, 0, 40) || !between(e.oxygen, 0, 200) || !between(e.water, 0, 60) || !between(e.food, 0, 21)) return false;
+  if (!['ice','rocks','iceLeft','rocksLeft','scans','melted'].every(k => Number.isInteger(e[k]) && between(e[k],0,2))) return false;
+  if (e.ice + e.iceLeft + e.melted !== 2 || e.rocks + e.rocksLeft + e.scans !== 2) return false;
+  if (!Number.isInteger(e.tripsDay) || !between(e.tripsDay,-1,6) || typeof e.notice !== 'string') return false;
+  if (e.outside && (!e.suited || e.suit <= 0)) return false;
+  if (e.complete && (!e.melted || e.iceLeft)) return false;
+  return Array.isArray(e.position) && e.position.length === 2 && between(e.position[0],-14,14) && between(e.position[1],16,43);
+}
+
 /** Save the mission. Returns true if it worked (storage can be blocked). */
 export function saveMission(state) {
   // Debug day jumps and subsequent test choices must not overwrite the real mission.
   if (state.debugPreview) return true;
   try {
+    if (state.expedition) {
+      localStorage.setItem(EXPEDITION_KEY, JSON.stringify({ version: 1, state }));
+      return true;
+    }
     const choices = state.log.map(entry => entry.choiceId);
     if (choices.some(id => typeof id !== 'string')) return false;
     localStorage.setItem(SAVE_KEY, JSON.stringify({ version: SAVE_VERSION, choices }));
@@ -46,8 +72,12 @@ export function saveMission(state) {
  * Returns null (and deletes the save) if there is no save or it no longer fits
  * the mission, for example a save from an older version of the game.
  */
-export function loadMission(initial, decide) {
-  OLD_SAVE_KEYS.forEach(discard);
+export function loadMission(initial, decide, options = {}) {
+  // Keep the legacy save intact, so rolling back the files also restores its progress.
+  try {
+    const savedExpedition = JSON.parse(localStorage.getItem(EXPEDITION_KEY));
+    if (options.expedition && validExpeditionSave(savedExpedition)) return savedExpedition.state;
+  } catch { /* A malformed new save falls back to the original mission. */ }
   let saved;
   try {
     saved = JSON.parse(localStorage.getItem(SAVE_KEY));

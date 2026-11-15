@@ -10,14 +10,14 @@
  *   - In Node, `require('./engine.js')` returns the same names (see the bottom).
  *
  * Game rules in one breath:
- *   - Four meters, 0 to 100: Battery, Air & Water, Crew Safety and Science.
+ *   - Four meters, 0 to 100: Battery, Life Support, Crew Safety and Science.
  *   - Every day the ship uses a base load of Battery. Solar panels recharge it
  *     while the Sun is up. The Sun sets on Day 6: no more solar power, and the
  *     heaters raise the load. The battery is a planning problem.
  *   - Nothing is hidden. A choice that creates a delayed risk adds a visible
  *     warning straight away, with the day it will hit and how to fix it.
  *     Forecastable events (the solar storm, sunset) are warned about early.
- *   - The crew is safe if Air & Water and Crew Safety both end at 40 or more.
+ *   - The crew is safe if Life Support and Crew Safety both end at 40 or more.
  *     Four stars reward goals: research sent home, a fresh harvest, a battery
  *     reserve for the night and a healthy crew. Safe crew + 2 stars = success.
  *
@@ -33,7 +33,7 @@
 
 const RESOURCES = {
   power:   { key: 'power',   label: 'Battery',     icon: '⚡', start: 80, about: 'Stored electricity for every machine on the ship.' },
-  life:    { key: 'life',    label: 'Air & Water', icon: '💨', start: 60, about: 'Clean air to breathe and clean water to drink.' },
+  life:    { key: 'life',    label: 'Life Support', icon: '💨', start: 60, about: 'Health of the air and water recycling systems. This is a score, not stored oxygen.' },
   safety:  { key: 'safety',  label: 'Crew Safety', icon: '🛡️', start: 60, about: 'How well the crew is protected and ready.' },
   science: { key: 'science', label: 'Science',     icon: '🔬', start: 0,  about: 'Discoveries the crew has collected. Earn it!' },
 };
@@ -44,7 +44,9 @@ const SAFE_LEVEL = 40;
 /* Science the research star needs before it is worth sending home. */
 const RESEARCH_GOAL = 40;
 /* Battery the ship should keep at the end to survive the lunar night. */
-const RESERVE_GOAL = 30;
+const HIBERNATION = Object.freeze({ days: 14, dailyLoad: 2, margin: 2 });
+// Fictional uncrewed sleep mode: 14 x 2 + 2 margin = 30 teaching units.
+const RESERVE_GOAL = HIBERNATION.days * HIBERNATION.dailyLoad + HIBERNATION.margin;
 /* Both crew meters at this level or more earns the "Healthy crew" star. */
 const HEALTHY_LEVEL = 70;
 
@@ -300,7 +302,7 @@ const days = [
     title: 'Ready for the long night',
     speaker: 'Sam · mission specialist',
     briefing: 'Our last day! Our ride home arrives tonight. Selene must stay warm through two weeks of darkness for the next crew. Should we run the final safety checks, or use a small dish for one last downlink?',
-    story: 'A night on the Moon lasts about two weeks and gets colder than −290 °F (−180 °C). Selene needs Battery left over to keep its heaters running until the Sun comes back.',
+    story: 'A night on the Moon lasts about two weeks and gets colder than −290 °F (−180 °C). After the crew leaves, Selene enters uncrewed sleep mode. Our game budgets 2 Battery per day for 14 days, plus 2 spare: 30 total. The occupied ship uses 20 per night shift. These are teaching units, not NASA power measurements.',
     why: 'A lunar night lasts about 14 Earth days. With no sunlight, solar-powered machines must live on their batteries, and the cold can crack parts. NASA is building new power systems, like small nuclear power sources, so Moon bases can keep running all night.',
     source: { label: 'NASA: Lunar Surface Technology', url: 'https://www.nasa.gov/lunar-surface-technology/' },
     station: 'Flight deck',
@@ -543,6 +545,21 @@ function decide(state, index) {
     }
   }
 
+  // Expedition supplies share the same path as forecasts: no hidden end-of-day cost.
+  if (s.expedition) {
+    const e = s.expedition;
+    const shortage = e.oxygen < 4 || e.food < 1;
+    e.oxygen = Math.max(0, e.oxygen - 4);
+    e.food = Math.max(0, e.food - 1);
+    if (choice.id === 'harvest' && hasFlag(s, 'harvest')) e.food += 2;
+    notes.push({ text: 'Crew supplies: used 4 base oxygen and 1 meal-day.', tone: 'info', topic: 'budget' });
+    if (shortage) {
+      s.safety -= 5;
+      notes.push({ text: 'Not enough oxygen or meals: lost 5 Crew Safety.',
+        ahead: 'Not enough oxygen or meals tonight: lose 5 Crew Safety.', tone: 'bad', topic: 'risk' });
+    }
+  }
+
   // 6. Keep every meter a whole number from 0 to 100.
   for (const key of RESOURCE_KEYS) s[key] = clampMeter(s[key]);
 
@@ -565,7 +582,7 @@ function decide(state, index) {
   });
 
   s.day += 1;
-  // The mission ends after Day 7, or early if Air & Water or Crew Safety hits 0.
+  // The mission ends after Day 7, or early if Life Support or Crew Safety hits 0.
   s.ended = s.day >= days.length || s.life === 0 || s.safety === 0;
   s.warnings = warningsFor(s);
   return s;
@@ -608,14 +625,14 @@ const STARS = [
   {
     id: 'reserve',
     label: 'Battery reserve for the night',
-    how: `Finish all 7 days with at least ${RESERVE_GOAL} ⚡ Battery, so Selene stays warm through the lunar night.`,
+    how: `Finish all 7 days with at least ${RESERVE_GOAL} ⚡ Battery, for uncrewed sleep mode: 14 days × 2 Battery, plus 2 spare. This is a simplified game budget.`,
     earned: state => state.day >= days.length && state.power >= RESERVE_GOAL,
     progress: state => `${state.power} ⚡ now · need ${RESERVE_GOAL} ⚡ after Day ${days.length}`,
   },
   {
     id: 'healthy',
     label: 'Healthy crew',
-    how: `Finish with 💨 Air & Water and 🛡️ Crew Safety both at ${HEALTHY_LEVEL} or more. Fix risks early and do repairs.`,
+    how: `Finish with 💨 Life Support and 🛡️ Crew Safety both at ${HEALTHY_LEVEL} or more. Fix risks early and do repairs.`,
     earned: state => state.day >= days.length && state.life >= HEALTHY_LEVEL && state.safety >= HEALTHY_LEVEL,
     progress: state => `💨 ${state.life} · 🛡️ ${state.safety} now · need ${HEALTHY_LEVEL} each`,
   },
@@ -673,7 +690,7 @@ function outcome(state) {
 if (typeof module !== 'undefined') {
   module.exports = {
     RESOURCES, RESOURCE_KEYS, STATIONS, CHOICE_KINDS, RISKS, STARS, BLACKOUT,
-    DAYLIGHT, NIGHT, SAFE_LEVEL, RESEARCH_GOAL, RESERVE_GOAL, HEALTHY_LEVEL, SUNSET_DAY,
+    DAYLIGHT, NIGHT, HIBERNATION, SAFE_LEVEL, RESEARCH_GOAL, RESERVE_GOAL, HEALTHY_LEVEL, SUNSET_DAY,
     days, dailyBudget, initial, decide, forecast, goals, report, outcome, effectText,
   };
 }

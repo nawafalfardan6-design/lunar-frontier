@@ -107,7 +107,8 @@ export function createXR({ renderer, scene, camera, dialog, modal, interact, pos
       const hit = ray.intersectObject(panel)[0];
       if (!hit || hit.uv.x < 0.045 || hit.uv.x > 0.955) return;
       const y = (1 - hit.uv.y) * 768;
-      buttons.find(button => y >= button.top && y <= button.top + 54)?.button.click();
+      const selected = buttons.find(button => y >= button.top && y <= button.top + 54);
+      if (selected && !selected.button.disabled) selected.button.click();
     });
   }
 

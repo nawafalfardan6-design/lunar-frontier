@@ -27,7 +27,7 @@ function effectOf(choiceId, key, fallback) {
 const has = (state, flag) => Array.isArray(state.flags) && state.flags.includes(flag);
 const warning = (state, id) => (state.warnings || []).find(item => item.id === id);
 
-export const opening = `<span class="kicker">NORA / CREW CHANNEL</span><h2>Seven days of food. Four people.</h2><p>Our ride home comes after Day 7. Until then, let’s keep Selene running. The Sun sets on Day 6, so we need to save Battery for the night.</p><button id="launch">Get to the air recycler →</button>`;
+export const opening = `<span class="kicker">NORA / CREW CHANNEL</span><h2>Seven days of food. Four people.</h2><p>Our ride home comes after Day 7. Until then, let’s keep Selene running. We landed near the end of the lunar daytime. The Sun sets on mission Day 6, so we need to save Battery for the night. Each mission day is one Earth day.</p><button id="launch">Get to the air recycler →</button>`;
 
 /** Advice for the day the crew is about to play. */
 export function companionAdvice(state) {
@@ -38,12 +38,22 @@ export function companionAdvice(state) {
   }
 
   // Urgent things first: a warning that is due today.
+  const expedition = state.expedition;
+  if (expedition && !expedition.complete) {
+    if (expedition.outside) return expedition.ice > 0 || expedition.suit < 15
+      ? 'Use Go to airlock and return inside. Your suit uses oxygen outside. Melt the ice, then make breathing oxygen.'
+      : 'Follow the blue marker to the sealed ice cache. Press E nearby to recover it, then return to the airlock.';
+    if (!expedition.iceLeft) return 'Open Airlock & supplies. Melt one ice sample, then make breathing oxygen. Both steps use Battery.';
+    return 'Open Airlock & supplies. Put on your suit and fill its tank. Use Go to airlock, then open the door. Follow the marker to the ice cache.';
+  }
+  if (expedition?.outside) return 'Collect the marked rocks for Science. Keep enough suit oxygen to return. Use Go to airlock whenever you want to head back.';
+  if (expedition && (expedition.oxygen < 4 || expedition.food < 1)) return 'We need supplies before the next shift: 4 base oxygen and 1 meal-day. Use water and Battery to make what is missing, or we lose 5 Crew Safety.';
   if (warning(state, 'battery')) {
     return 'Our Battery is almost empty. If it runs out, the heaters and air pumps slow down and the crew gets hurt. Pick the job that uses the least ⚡ today.';
   }
   const due = (state.warnings || []).find(item => item.dueDay === state.day + 1 && item.id !== 'sunset');
   if (due) return `Heads up: “${due.text}” It hits tonight. ${due.fix}`;
-  if (state.life < safeLevel() + 5) return `Air & Water is down to ${state.life}. The crew needs it at ${safeLevel()} or more by the end. A repair job would help.`;
+  if (state.life < safeLevel() + 5) return `Life Support is down to ${state.life}. The crew needs it at ${safeLevel()} or more by the end. A repair job would help.`;
   if (state.safety < safeLevel() + 5) return `Crew Safety is down to ${state.safety}. The crew needs it at ${safeLevel()} or more by the end. Look for a choice that adds 🛡️.`;
 
   const science = state.science;
@@ -67,8 +77,8 @@ export function companionAdvice(state) {
           : `We have ${science} 🔬. Even remote research won’t reach ${goalScience} today, so resting and saving Battery may be smarter.`;
     case 4:
       return has(state, 'plants-tended')
-        ? 'Last sunny day! The plants you tended are ready. Watering them today earns the harvest star. Cleaning the recycler helps Air & Water instead.'
-        : 'Last sunny day! The plants were not tended on Day 2, so they cannot be harvested. Cleaning the recycler gives the crew more Air & Water.';
+        ? 'Last sunny day! The plants you tended are ready. Watering them today earns the harvest star. Cleaning the recycler helps Life Support instead.'
+        : 'Last sunny day! The plants were not tended on Day 2, so they cannot be harvested. Cleaning the recycler gives the crew more Life Support.';
     case 5:
       return science >= goalScience
         ? `The Sun sets today. We have ${science} 🔬, enough for the research star. The big dish costs less ⚡ today than the small dish tomorrow.`
@@ -111,7 +121,7 @@ export function companionReaction(state) {
   const hits = last.notes.filter(note => note.tone === 'bad').map(note => note.cause);
   const react = REACTIONS[last.choiceId];
   let text = hits.includes('battery') ? 'The Battery ran dry, just like the warning said. The crew got cold and the air pumps slowed.'
-    : hits.includes('filter') ? 'The worn filter clogged, just like the warning said. Maya swapped it, but we lost Air & Water.'
+    : hits.includes('filter') ? 'The worn filter clogged, just like the warning said. Maya swapped it, but we lost Life Support.'
     : hits.includes('storm') ? 'The storm hit and the shelter walls were thin. The crew is okay, but Crew Safety dropped.'
     : react ? react(state) : 'Done. Let’s see what the next day brings.';
   if (state.ended) return `${text} That was your final call, Commander. Let’s look at the report.`;
@@ -126,7 +136,7 @@ export function createCompanion(getState, show, close) {
   button.innerHTML = '<span class="companion-avatar" aria-hidden="true">N</span><span>Ask Nora<small>Need a hand?</small></span>';
   button.onclick = () => {
     const state = getState();
-    show(`<div class="companion-heading"><span class="companion-avatar" aria-hidden="true">N</span><div><strong>NORA</strong><small>Here when you need me</small></div></div><h2>Let’s take this one step at a time.</h2><p>${companionAdvice(state)}</p><p class="supply-note">${Math.max(0, 7 - state.day)} mission days of packaged meals remain. A fresh harvest is a bonus. This is the fictional mission’s supply plan.</p><button id="nora-close">Got it. I’m ready.</button>`);
+    show(`<div class="companion-heading"><span class="companion-avatar" aria-hidden="true">N</span><div><strong>NORA</strong><small>Here when you need me</small></div></div><h2>Let’s take this one step at a time.</h2><p>${companionAdvice(state)}</p><p class="supply-note">${state.expedition ? state.expedition.food : Math.max(0, 7 - state.day)} meal-days remain. A fresh harvest is a bonus. This is the fictional mission’s supply plan.</p><button id="nora-close">Got it. I’m ready.</button>`);
     document.getElementById('nora-close').onclick = close;
   };
   document.body.append(button);
